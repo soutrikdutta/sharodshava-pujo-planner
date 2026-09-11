@@ -48,6 +48,16 @@ function useAnimatedCounter(target: number, duration: number = 1.2) {
   return count;
 }
 
+// Illustrated Durga Puja Typography Title Banners for each day
+const DAY_DOODLE_TITLES: Record<string, string> = {
+  shashti: '/images/doodles/shashti_title.png',
+  saptami: '/images/doodles/saptami_title.png',
+  ashtami: '/images/doodles/ashtami_title.png',
+  nabami: '/images/doodles/navami_title.png',
+  navami: '/images/doodles/navami_title.png',
+  dashami: '/images/doodles/dashami_title.png',
+};
+
 export const FestivalHero: React.FC<FestivalHeroProps> = ({
   festival,
   status,
@@ -60,6 +70,8 @@ export const FestivalHero: React.FC<FestivalHeroProps> = ({
   const activeDay = selectedDay || status.currentDay;
   const daysToGo = status.daysRemaining ?? 1;
   const animatedDays = useAnimatedCounter(daysToGo, 1.4);
+
+  const doodleTitleSrc = activeDay ? DAY_DOODLE_TITLES[activeDay.id] : undefined;
 
   return (
     <div className="relative flex flex-col items-center justify-center text-center px-3 sm:px-4 max-w-4xl mx-auto py-2 sm:py-6">
@@ -102,40 +114,48 @@ export const FestivalHero: React.FC<FestivalHeroProps> = ({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
-              className="mb-1.5 sm:mb-2 px-3.5 py-0.5 sm:py-1 rounded-full bg-black/50 border border-white/15 backdrop-blur-2xl text-xs font-serif text-[#f4e5a9]/90 tracking-widest"
+              className="mb-1.5 sm:mb-2 px-3.5 py-1 rounded-full bg-black/50 border border-white/15 backdrop-blur-2xl text-xs font-serif text-[#f4e5a9]/90 tracking-widest flex items-center gap-2 shadow-md"
             >
-              {activeDay.bengaliName}
+              <DayThemeDoodle dayId={activeDay.id} size="xs" animated={true} />
+              <span>{activeDay.bengaliName}</span>
             </motion.div>
           )}
 
-          {/* Thematic Animated Durga Puja Day Doodle Illustration */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.85, y: -6 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="relative my-1 sm:my-2 flex items-center justify-center"
-          >
-            {/* Ambient glowing backdrop circle */}
-            <div className="absolute w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-tr from-[#d4af37]/25 via-[#f97316]/20 to-[#e11d48]/25 blur-2xl pointer-events-none" />
-            <DayThemeDoodle dayId={activeDay.id} size="lg" animated={true} />
-          </motion.div>
-
-          {/* Day Name (e.g. SHASHTI, SAPTAMI, ASHTAMI, NAVAMI, DASHAMI) */}
-          <div className="relative">
-            {/* Subtle animated warm aura */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#d4af37]/25 via-[#8b1e2a]/25 to-[#d4af37]/25 blur-3xl opacity-70 pointer-events-none" />
-            
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white uppercase font-sans drop-shadow-[0_10px_35px_rgba(0,0,0,0.8)]">
-              {activeDay.name}
-            </h1>
-          </div>
+          {/* Illustrated Doodle Typographic Day Title Banner */}
+          {doodleTitleSrc ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="relative my-2 sm:my-3 w-full max-w-[320px] sm:max-w-[480px] md:max-w-[620px] lg:max-w-[700px] mx-auto flex items-center justify-center"
+            >
+              {/* Subtle ambient warm back-glow behind typographic artwork */}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#d4af37]/35 via-[#f97316]/30 to-[#e11d48]/35 blur-2xl opacity-80 pointer-events-none rounded-3xl" />
+              
+              <motion.img
+                src={doodleTitleSrc}
+                alt={`${activeDay.name} Durga Puja Doodle Typography`}
+                className="relative z-10 w-full h-auto object-contain max-h-[140px] sm:max-h-[190px] md:max-h-[230px] drop-shadow-[0_12px_36px_rgba(0,0,0,0.85)] select-none pointer-events-none filter brightness-105 contrast-105"
+                animate={{ y: [-2.5, 2.5, -2.5] }}
+                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            </motion.div>
+          ) : (
+            /* Fallback for non-doodled days */
+            <div className="relative my-2">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#d4af37]/25 via-[#8b1e2a]/25 to-[#d4af37]/25 blur-3xl opacity-70 pointer-events-none" />
+              <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white uppercase font-sans drop-shadow-[0_10px_35px_rgba(0,0,0,0.8)]">
+                {activeDay.name}
+              </h1>
+            </div>
+          )}
 
           {/* Ordinal Subtitle & Significance */}
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="mt-1.5 sm:mt-2 text-sm sm:text-lg font-light tracking-wide text-white/80"
+            className="mt-1 sm:mt-1.5 text-sm sm:text-lg font-light tracking-wide text-white/85 font-mono"
           >
             {activeDay.ordinalLabel}
           </motion.p>
