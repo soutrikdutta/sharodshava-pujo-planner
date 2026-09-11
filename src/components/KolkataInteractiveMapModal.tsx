@@ -325,8 +325,8 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
       const origin = coordinates
         ? `${coordinates.latitude},${coordinates.longitude}`
         : `${orderedPandals[0].lat},${orderedPandals[0].lng}`;
-      const destination = `${orderedPandals[orderedPandals.length - 1].lat},${orderedPandals[orderedPandals.length - 1].lng}` handling,
-      waypoints = orderedPandals
+      const destination = `${orderedPandals[orderedPandals.length - 1].lat},${orderedPandals[orderedPandals.length - 1].lng}`;
+      const waypoints = orderedPandals
         .slice(coordinates ? 0 : 1, -1)
         .map(p => `${p.lat},${p.lng}`)
         .join('|');
@@ -541,8 +541,8 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
               {/* Map instructions & hover helper */}
               <div className="px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-between text-xs text-white/70 shrink-0">
                 <span className="flex items-center gap-1.5">
-                  <Sparkles size={13} className="text-[#d4af37] cursor-pointer" />
-                  <span>Tap or click on <strong>North, Central, or South Kolkata</strong> to view & select pandals:</span>
+                  <Sparkles size={13} className="text-[#d4af37]" />
+                  <span>Tap or click on <strong>North, Central, or South Kolkata</strong> on the map:</span>
                 </span>
                 {hoveredZone && (
                   <span className="font-semibold text-[#f4e5a9] capitalize animate-pulse">
@@ -552,17 +552,17 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
               </div>
 
               {/* The Map SVG Container */}
-              <div className="flex-1 flex flex-col items-center justify-center py-1 overflow-hidden min-h-0">
-                <div className="relative mx-auto rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-[#0a0d14] select-none max-h-[58vh] sm:max-h-[62vh] aspect-[668/1000] flex items-center justify-center group">
+              <div className="flex-1 flex flex-col items-center justify-center py-2 overflow-hidden min-h-0">
+                <div className="relative mx-auto select-none max-h-[58vh] sm:max-h-[62vh] aspect-[682/1024] flex items-center justify-center filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]">
                   
-                  {/* Clean Map Image */}
+                  {/* Clean Transparent Map Image */}
                   <img
                     src="/kolkata_zones_map.png"
                     alt="Kolkata North, Central, South Zones Map"
-                    className="w-full h-full object-contain block select-none"
+                    className="w-full h-full object-contain block select-none pointer-events-none"
                   />
 
-                  {/* SVG Clickable Overlay */}
+                  {/* SVG Clickable & Visible Boundary Overlay */}
                   <svg
                     viewBox="0 0 100 100"
                     preserveAspectRatio="none"
@@ -578,93 +578,75 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                       <filter id="glow-south" x="-20%" y="-20%" width="140%" height="140%">
                         <feDropShadow dx="0" dy="0" stdDeviation="2" floodColor="#ef4444" floodOpacity="0.8"/>
                       </filter>
+                      <filter id="glow-boundary" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="0" stdDeviation="1.5" floodColor="#ffd700" floodOpacity="0.9" />
+                      </filter>
                     </defs>
 
-                    {/* Zone 1: North Kolkata */}
+                    {/* Zone 1: North Kolkata Organic Polygon */}
                     <polygon
-                      points="0,0 100,0 100,36 0,36"
+                      points="70,2 88,5 91,8 90,12 87,16 85,21 79,25 78,29 76,31 73,35 75.5,38.5 60,38 46.5,38 50,31 48,25 52,21 50,18 55,12 56,8 62,5"
                       onClick={() => setActiveZoneWindow('north')}
                       onMouseEnter={() => setHoveredZone('north')}
                       onMouseLeave={() => setHoveredZone(null)}
                       className="cursor-pointer transition-all duration-300"
-                      fill={hoveredZone === 'north' ? 'rgba(56, 189, 248, 0.35)' : 'rgba(56, 189, 248, 0.05)'}
+                      fill={hoveredZone === 'north' ? 'rgba(56, 189, 248, 0.35)' : 'rgba(56, 189, 248, 0.01)'}
                       stroke="#38bdf8"
-                      strokeWidth={hoveredZone === 'north' ? 1.5 : 0}
+                      strokeWidth={hoveredZone === 'north' ? 1.8 : 0.6}
+                      strokeDasharray={hoveredZone === 'north' ? 'none' : '2 2'}
                       filter={hoveredZone === 'north' ? 'url(#glow-north)' : 'none'}
                     />
 
-                    {/* Zone 2: Central Kolkata */}
+                    {/* Zone 2: Central Kolkata Organic Polygon */}
                     <polygon
-                      points="0,36 100,36 100,62 0,62"
+                      points="46.5,38 60,38 75.5,38.5 93,42 94,47 97,52 95,56 84,59 80.5,61 62,63 45,59 27,60 20,62 27,58 32,56 41,52 43,45 46.5,41"
                       onClick={() => setActiveZoneWindow('central')}
                       onMouseEnter={() => setHoveredZone('central')}
                       onMouseLeave={() => setHoveredZone(null)}
                       className="cursor-pointer transition-all duration-300"
-                      fill={hoveredZone === 'central' ? 'rgba(245, 158, 11, 0.35)' : 'rgba(245, 158, 11, 0.05)'}
+                      fill={hoveredZone === 'central' ? 'rgba(245, 158, 11, 0.35)' : 'rgba(245, 158, 11, 0.01)'}
                       stroke="#f59e0b"
-                      strokeWidth={hoveredZone === 'central' ? 1.5 : 0}
+                      strokeWidth={hoveredZone === 'central' ? 1.8 : 0.6}
+                      strokeDasharray={hoveredZone === 'central' ? 'none' : '2 2'}
                       filter={hoveredZone === 'central' ? 'url(#glow-central)' : 'none'}
                     />
 
-                    {/* Zone 3: South Kolkata */}
+                    {/* Zone 3: South Kolkata Organic Polygon */}
                     <polygon
-                      points="0,62 100,62 100,100 0,100"
+                      points="20,62 27,60 45,59 62,63 80.5,61 82,68 82,72 79,74 73,76 78,80 80,84 80,88 81,93 82,96 80,98 75,98 64,94 58,90 15,86 12,80 4,76 3,74 10,70 16,65"
                       onClick={() => setActiveZoneWindow('south')}
                       onMouseEnter={() => setHoveredZone('south')}
                       onMouseLeave={() => setHoveredZone(null)}
                       className="cursor-pointer transition-all duration-300"
-                      fill={hoveredZone === 'south' ? 'rgba(239, 68, 68, 0.35)' : 'rgba(239, 68, 68, 0.05)'}
+                      fill={hoveredZone === 'south' ? 'rgba(239, 68, 68, 0.35)' : 'rgba(239, 68, 68, 0.01)'}
                       stroke="#ef4444"
-                      strokeWidth={hoveredZone === 'south' ? 1.5 : 0}
+                      strokeWidth={hoveredZone === 'south' ? 1.8 : 0.6}
+                      strokeDasharray={hoveredZone === 'south' ? 'none' : '2 2'}
                       filter={hoveredZone === 'south' ? 'url(#glow-south)' : 'none'}
                     />
+
+                    {/* Visible Boundary Divider 1: North & Central */}
+                    <path
+                      d="M 46.5 38 C 55 37.5, 65 38.5, 75.5 38.5"
+                      fill="none"
+                      stroke="#ffd700"
+                      strokeWidth="1.6"
+                      strokeDasharray="3 2"
+                      className="pointer-events-none"
+                      filter="url(#glow-boundary)"
+                    />
+
+                    {/* Visible Boundary Divider 2: Central & South */}
+                    <path
+                      d="M 20 62 C 32 59, 48 59, 62 63 C 71 64.5, 77 62.5, 80.5 61"
+                      fill="none"
+                      stroke="#ffd700"
+                      strokeWidth="1.6"
+                      strokeDasharray="3 2"
+                      className="pointer-events-none"
+                      filter="url(#glow-boundary)"
+                    />
                   </svg>
-
-                  {/* Interactive Floating Hover Badges */}
-                  <button
-                    onClick={() => setActiveZoneWindow('north')}
-                    onMouseEnter={() => setHoveredZone('north')}
-                    onMouseLeave={() => setHoveredZone(null)}
-                    className={`absolute top-[18%] left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold tracking-wide shadow-xl backdrop-blur-md border transition-all cursor-pointer flex items-center gap-1.5 z-20 whitespace-nowrap ${
-                      hoveredZone === 'north'
-                        ? 'bg-sky-500 text-black border-sky-200 scale-105 shadow-sky-500/40'
-                        : 'bg-black/60 text-sky-200 border-sky-400/40 hover:bg-sky-600/80 hover:text-white'
-                    }`}
-                  >
-                    <MapPin size={12} className={hoveredZone === 'north' ? 'text-black' : 'text-sky-300'} />
-                    <span>North Kolkata</span>
-                    <span className="text-[10px] opacity-75">→</span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveZoneWindow('central')}
-                    onMouseEnter={() => setHoveredZone('central')}
-                    onMouseLeave={() => setHoveredZone(null)}
-                    className={`absolute top-[48%] left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold tracking-wide shadow-xl backdrop-blur-md border transition-all cursor-pointer flex items-center gap-1.5 z-20 whitespace-nowrap ${
-                      hoveredZone === 'central'
-                        ? 'bg-amber-400 text-black border-amber-200 scale-105 shadow-amber-500/40'
-                        : 'bg-black/60 text-amber-200 border-amber-400/40 hover:bg-amber-500/80 hover:text-black'
-                    }`}
-                  >
-                    <MapPin size={12} className={hoveredZone === 'central' ? 'text-black' : 'text-amber-300'} />
-                    <span>Central Kolkata</span>
-                    <span className="text-[10px] opacity-75">→</span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveZoneWindow('south')}
-                    onMouseEnter={() => setHoveredZone('south')}
-                    onMouseLeave={() => setHoveredZone(null)}
-                    className={`absolute top-[78%] left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold tracking-wide shadow-xl backdrop-blur-md border transition-all cursor-pointer flex items-center gap-1.5 z-20 whitespace-nowrap ${
-                      hoveredZone === 'south'
-                        ? 'bg-rose-500 text-white border-rose-200 scale-105 shadow-rose-500/40'
-                        : 'bg-black/60 text-rose-200 border-rose-400/40 hover:bg-rose-600/80 hover:text-white'
-                    }`}
-                  >
-                    <MapPin size={12} className={hoveredZone === 'south' ? 'text-white' : 'text-rose-300'} />
-                    <span>South Kolkata</span>
-                    <span className="text-[10px] opacity-75">→</span>
-                  </button>
                 </div>
               </div>
 
@@ -708,7 +690,7 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
           /* ═══════════════════════════════════════════════════════════ */
           /* VIEW 2: ZONE PANDAL SELECTION WITH CHECKBOXES & CONFIRM BTN */
           /* ═══════════════════════════════════════════════════════════ */
-          ) : !isConfirmed ? (\
+          ) : !isConfirmed ? (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -852,7 +834,8 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                           isChecked
                             ? 'bg-[#d4af37] border-[#d4af37] text-black shadow-md'
                             : 'bg-black/40 border-white/30 group-hover:border-white/60'
-                        }`}>\n                          {isChecked && <Check size={14} strokeWidth={3} />}
+                        }`}>
+                          {isChecked && <Check size={14} strokeWidth={3} />}
                         </div>
 
                         <div className="space-y-1 min-w-0">
@@ -1528,7 +1511,7 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                     href={selectedMenuRestaurant.googleMapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-xl bg-[#d4af37] text-black text-xs font-bold hover:bg-[#e6ca65] transition-colors flex items-center gap-1"
+                    className="px-3.5 py-1.5 rounded-xl bg-[#d4af37] text-black text-xs font-bold hover:bg-[#e6ca65] transition-colors flex items-center gap-1"
                   >
                     <Navigation size={11} />
                     <span>Get Directions</span>
