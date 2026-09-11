@@ -12,40 +12,44 @@ interface FestivalHeroProps {
   onOpenSitePicker?: () => void;
 }
 
-// Animated counter hook for smooth number increment
-function useAnimatedCounter(target: number, duration: number = 1.2) {
-  const [count, setCount] = useState(0);
+interface CountdownTime {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  isExpired: boolean;
+}
 
-  useEffect(() => {
-    let start = 0;
-    const end = target;
-    if (start === end) {
-      setCount(end);
-      return;
+// Live real-time countdown hook
+function useLiveCountdown(targetDateStr: string): CountdownTime {
+  const calculate = (): CountdownTime => {
+    const target = new Date(targetDateStr + 'T00:00:00').getTime();
+    const now = Date.now();
+    const diff = target - now;
+
+    if (diff <= 0) {
+      return { days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true };
     }
 
-    const totalSteps = 45;
-    const stepTime = (duration * 1000) / totalSteps;
-    let currentStep = 0;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
+    return { days, hours, minutes, seconds, isExpired: false };
+  };
+
+  const [timeLeft, setTimeLeft] = useState<CountdownTime>(calculate);
+
+  useEffect(() => {
+    setTimeLeft(calculate());
     const timer = setInterval(() => {
-      currentStep++;
-      const progress = currentStep / totalSteps;
-      // easeOutExpo progression
-      const ease = 1 - Math.pow(2, -10 * progress);
-      const current = Math.round(start + (end - start) * ease);
-      setCount(current);
-
-      if (currentStep >= totalSteps) {
-        setCount(end);
-        clearInterval(timer);
-      }
-    }, stepTime);
-
+      setTimeLeft(calculate());
+    }, 1000);
     return () => clearInterval(timer);
-  }, [target, duration]);
+  }, [targetDateStr]);
 
-  return count;
+  return timeLeft;
 }
 
 // Illustrated Durga Puja Typography Title Banners for each day
@@ -68,8 +72,7 @@ export const FestivalHero: React.FC<FestivalHeroProps> = ({
   // If user explicitly picked a day from selector, showcase that day
   const isViewingSpecificDay = Boolean(selectedDay);
   const activeDay = selectedDay || status.currentDay;
-  const daysToGo = status.daysRemaining ?? 1;
-  const animatedDays = useAnimatedCounter(daysToGo, 1.4);
+  const countdown = useLiveCountdown(festival.startDate);
 
   const doodleTitleSrc = activeDay ? DAY_DOODLE_TITLES[activeDay.id] : undefined;
 
@@ -211,7 +214,7 @@ export const FestivalHero: React.FC<FestivalHeroProps> = ({
           )}
         </motion.div>
 
-      /* STATE 2: BEFORE DURGA PUJA (COUNTDOWN) */
+      /* STATE 2: BEFORE DURGA PUJA (LIVE COUNTDOWN IN DAYS, HOURS, MINS, SECS) */
       ) : status.status === 'BEFORE' ? (
         <motion.div
           key="countdown-hero"
@@ -225,61 +228,71 @@ export const FestivalHero: React.FC<FestivalHeroProps> = ({
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-[11px] sm:text-xs uppercase tracking-[0.25em] text-[#d4af37]/90 font-medium mb-1 font-mono"
+            className="text-[11px] sm:text-xs uppercase tracking-[0.25em] text-[#d4af37]/90 font-medium mb-2 font-mono"
           >
-            {festival.bengaliTitle} • Aagomoni
+            {festival.bengaliTitle} • Aagomoni Countdown
           </motion.span>
 
-          {/* Central Extremely Large Animated Number with Warm Golden Aura */}
-          <div className="relative my-1 sm:my-3 flex items-center justify-center">
-            {/* Subtle animated ambient glow behind number */}
-            <motion.div
-              className="absolute w-44 sm:w-64 h-44 sm:h-64 rounded-full pointer-events-none"
-              style={{
-                background: 'radial-gradient(circle, rgba(212, 175, 55, 0.3) 0%, rgba(139, 30, 42, 0.15) 50%, transparent 75%)',
-                filter: 'blur(45px)',
-              }}
-              animate={{
-                scale: [1, 1.15, 1],
-                opacity: [0.5, 0.8, 0.5],
-              }}
-              transition={{
-                duration: 4,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            />
+          {/* Real-time Live Countdown Grid: Days, Hours, Mins, Secs */}
+          <div className="relative my-3 sm:my-5 w-full max-w-md sm:max-w-xl md:max-w-2xl mx-auto px-1">
+            {/* Ambient warm aura behind countdown */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#d4af37]/30 via-[#f97316]/25 to-[#e11d48]/30 blur-3xl opacity-85 pointer-events-none rounded-3xl" />
 
-            {/* The Number */}
-            <motion.div
-              initial={{ scale: 0.85, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-              className="relative z-10 font-sans font-black text-7xl sm:text-9xl md:text-[130px] leading-none tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-white/95 to-white/70 drop-shadow-[0_10px_35px_rgba(212,175,55,0.3)]"
-            >
-              {animatedDays}
-            </motion.div>
+            <div className="grid grid-cols-4 gap-2 sm:gap-4 relative z-10">
+              {[
+                { label: 'DAYS', val: countdown.days, sub: 'দিন', color: 'from-[#ffd700] to-[#f59e0b]' },
+                { label: 'HOURS', val: countdown.hours, sub: 'ঘণ্টা', color: 'from-[#fef08a] to-[#eab308]' },
+                { label: 'MINS', val: countdown.minutes, sub: 'মিনিট', color: 'from-[#fed7aa] to-[#f97316]' },
+                { label: 'SECS', val: countdown.seconds, sub: 'সেকেন্ড', color: 'from-[#fecdd3] to-[#f43f5e]' },
+              ].map((item, idx) => (
+                <motion.div
+                  key={item.label}
+                  initial={{ opacity: 0, scale: 0.9, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ delay: 0.12 + idx * 0.08, duration: 0.5 }}
+                  className="relative group flex flex-col items-center justify-center p-3 sm:p-5 rounded-2xl sm:rounded-3xl bg-black/65 border border-[#d4af37]/45 hover:border-[#d4af37] backdrop-blur-2xl shadow-[0_10px_35px_rgba(0,0,0,0.7)] transition-all duration-300 overflow-hidden"
+                >
+                  {/* Subtle top light highlight */}
+                  <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                  
+                  {/* Digits with smooth tick transition */}
+                  <div className="relative flex items-center justify-center h-11 sm:h-16 md:h-20 w-full overflow-hidden">
+                    <AnimatePresence mode="popLayout">
+                      <motion.span
+                        key={item.val}
+                        initial={{ y: 8, opacity: 0.4 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -8, opacity: 0.4 }}
+                        transition={{ duration: 0.22, ease: 'easeOut' }}
+                        className="font-sans font-black text-3xl sm:text-5xl md:text-6xl tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white via-white/95 to-[#f4e5a9] drop-shadow-[0_4px_20px_rgba(212,175,55,0.45)]"
+                      >
+                        {String(item.val).padStart(2, '0')}
+                      </motion.span>
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Unit Label */}
+                  <span className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs font-extrabold tracking-[0.2em] text-[#d4af37] font-mono uppercase">
+                    {item.label}
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] text-white/45 font-serif mt-0.5">
+                    {item.sub}
+                  </span>
+                </motion.div>
+              ))}
+            </div>
           </div>
 
-          {/* "DAYS TO GO" */}
+          {/* Subtitle / Tagline */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.35 }}
-            className="tracking-[0.3em] text-xs sm:text-sm font-semibold text-[#f4e5a9] uppercase font-mono"
+            transition={{ duration: 0.6, delay: 0.45 }}
+            className="mt-2 text-xs sm:text-sm text-white/80 font-light tracking-wide flex items-center gap-1.5"
           >
-            DAYS TO GO
+            <Sparkles size={13} className="text-[#d4af37] animate-pulse" />
+            <span>Counting down to <strong>Maha Shashthi (16 October 2026)</strong></span>
           </motion.div>
-
-          {/* "Durga Puja is almost here" */}
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            className="mt-2 text-sm sm:text-base font-light text-white/75 tracking-wide"
-          >
-            Durga Puja is almost here
-          </motion.p>
         </motion.div>
 
       /* STATE 3: AFTER DURGA PUJA */
