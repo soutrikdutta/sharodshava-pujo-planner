@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Heart } from 'lucide-react';
-import { DURGA_PUJA_2026 } from '../config/festivalConfig';
+import { X } from 'lucide-react';
 
 interface InfoModalProps {
   isOpen: boolean;
@@ -76,40 +75,13 @@ export const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* About / Definition of Sharodshav */}
-            <div className="mb-4 p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-left">
+            <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-left">
               <h4 className="text-[11px] uppercase tracking-wider text-[#d4af37] font-semibold mb-1.5 flex items-center gap-1.5">
                 <span>About Sharodshav</span>
               </h4>
               <p className="text-xs text-white/75 leading-relaxed font-light">
                 <strong className="text-white font-medium">Sharodshav</strong> is an intelligent, real-time Durga Puja festival companion designed for Kolkata. It helps devotees effortlessly discover pandals, navigate optimal transit routes, avoid peak crowd congestion, and celebrate the grand autumn carnival together.
               </p>
-            </div>
-
-            {/* Creator Credits Section */}
-            <div className="pt-1 pb-3">
-              <p className="text-[11px] uppercase tracking-widest text-white/40 mb-2.5 font-medium">
-                {DURGA_PUJA_2026.creatorCredits.title}
-              </p>
-              
-              <div className="space-y-1.5">
-                {DURGA_PUJA_2026.creatorCredits.creators.map((name) => (
-                  <div
-                    key={name}
-                    className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-white/15 transition-all"
-                  >
-                    <span className="text-xs font-medium text-white/90">
-                      {name}
-                    </span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37]/70" />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Footer note */}
-            <div className="mt-4 pt-4 border-t border-white/[0.08] flex items-center justify-between text-[11px] text-white/40">
-              <span>Crafted with devotion & glass</span>
-              <Heart size={12} className="text-[#8b1e2a]" fill="currentColor" />
             </div>
           </motion.div>
         </div>
