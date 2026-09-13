@@ -401,3 +401,4 @@ export function getRestaurantsForZone(zone: 'north' | 'central' | 'south' | 'all
 
   return list;
 }
+

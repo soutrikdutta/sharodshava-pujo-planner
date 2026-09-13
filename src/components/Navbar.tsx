@@ -253,7 +253,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   />
                 ) : (
                   <div className="w-full h-full bg-[#d4af37]/20 flex items-center justify-center text-xs font-semibold text-[#f4e5a9]">
-                    {user.displayName ? user.displayName.charAt(0) : 'U'}\n                  </div>
+                    {user.displayName ? user.displayName.charAt(0) : 'U'}
+                  </div>
                 )}
               </button>
 

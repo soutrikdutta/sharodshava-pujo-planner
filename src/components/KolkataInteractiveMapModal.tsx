@@ -542,7 +542,7 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
               <div className="px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-between text-xs text-white/70 shrink-0">
                 <span className="flex items-center gap-1.5">
                   <Sparkles size={13} className="text-[#d4af37]" />
-                  <span>Tap or click on <strong>North, Central, or South Kolkata</strong> on the map:</span>
+                  <span>Tap or click on <strong>North, Central, or South Kolkata</strong> to view & select pandals:</span>
                 </span>
                 {hoveredZone && (
                   <span className="font-semibold text-[#f4e5a9] capitalize animate-pulse">
@@ -947,30 +947,31 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
               transition={{ duration: 0.3 }}
               className="flex flex-col flex-1 min-h-0 h-full space-y-3"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
-                <div className="flex items-center space-x-2.5 sm:space-x-3">
+              {/* Confirmed Header */}
+              <div className="flex items-center justify-between pb-2.5 border-b border-white/10 shrink-0">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <button
                     onClick={() => setIsConfirmed(false)}
-                    className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer border border-white/10 shrink-0"
-                    title="Edit pandals selection"
+                    className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-white/15"
                   >
                     <ArrowLeft size={14} />
-                    <span className="hidden sm:inline">Modify Pandals</span>
+                    <span>Edit Pandals</span>
                   </button>
-
+                  
                   <div>
-                    <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                      <span>{currentZoneInfo?.name} Route & Dining Plan</span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        {confirmedPandals.length} Pandals Selected
+                    <span className="text-[10px] font-bold tracking-widest text-[#d4af37] uppercase">
+                      CONFIRMED ROUTE & DINING
+                    </span>
+                    <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                      <span>{currentZoneInfo?.name} Trail</span>
+                      <span className="text-xs px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        {routeData?.orderedPandals.length} Pandals Confirmed
                       </span>
-                    </h3>
+                    </h2>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  {/* Copy Link button */}
+                <div className="flex items-center gap-2">
                   <button
                     onClick={handleCopyPlanInviteLink}
                     className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border shadow-sm ${
@@ -992,7 +993,6 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                   </button>
                 </div>
               </div>
-
               {/* Main Split Grid: Left = Map & Route, Right = Nearby Restaurants */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 flex-1 min-h-0 overflow-y-auto pr-1 sm:pr-2">
                 
@@ -1016,9 +1016,7 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                             <span>~{Math.round((routeData?.totalEtaMinutes || 0) / 60)}h {(routeData?.totalEtaMinutes || 0) % 60}m Hopping ETA</span>
                           </span>
                         </div>
-                        <p className="text-[11px] text-white/50">
-                          Optimized sequential path through selected {currentZoneInfo?.name} pandals
-                        </p>
+                        <p className="text-[11px] text-white/50">Shortest sequence calculated with live Kolkata traffic</p>
                       </div>
                     </div>
 
@@ -1026,79 +1024,77 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                       href={routeData?.googleMapsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#e6ca65] hover:scale-102 text-black text-xs font-bold transition-all flex items-center gap-1.5 shadow-md shrink-0 cursor-pointer"
+                      className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#e6ca65] hover:scale-102 text-black text-xs font-extrabold shadow-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
                     >
                       <Navigation size={13} />
-                      <span>Start GPS Route</span>
+                      <span>Start Navigation</span>
                       <ExternalLink size={11} />
                     </a>
                   </div>
 
-                  {/* Google Map Route Preview Embed */}
-                  <div className="rounded-2xl overflow-hidden border border-white/20 shadow-xl bg-[#0a0d14] relative h-48 sm:h-56 shrink-0">
-                    <iframe
-                      src={routeData?.embedMapUrl}
-                      width="100%"
-                      height="100%"
-                      style={{ border: 0 }}
-                      allowFullScreen={false}
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      title="Route Preview Map"
-                      className="opacity-85 hover:opacity-100 transition-opacity"
-                    />
-                    <div className="absolute top-2 left-2 px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-md border border-white/10 text-[10px] font-semibold text-white flex items-center gap-1.5 pointer-events-none">
-                      <MapPin size={10} className="text-[#d4af37]" />
-                      <span>Map Preview ({confirmedPandals.length} stops)</span>
+                  {/* Embedded Google Map Preview */}
+                  {routeData?.embedMapUrl && (
+                    <div className="relative w-full h-44 sm:h-52 rounded-2xl overflow-hidden border border-white/15 bg-black/40 shadow-inner">
+                      <iframe
+                        title="Route Navigation Map"
+                        src={routeData.embedMapUrl}
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        className="filter grayscale-[25%] contrast-110"
+                      />
+                      <div className="absolute top-2 left-2 px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-md border border-white/20 text-[10px] text-white font-medium flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>Interactive Navigation View</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Sequential Hop List */}
+                  {/* Step-by-Step Pandal Sequence */}
                   <div className="space-y-2">
-                    <h4 className="text-xs font-bold tracking-wider text-white/60 uppercase">
-                      Optimal Visiting Sequence ({confirmedPandals.length} Pandals)
+                    <h4 className="text-xs font-bold text-white/80 uppercase tracking-wider flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-[#d4af37]" />
+                      <span>Optimal Visiting Sequence ({routeData?.orderedPandals.length} stops)</span>
                     </h4>
 
                     <div className="space-y-2">
                       {routeData?.orderedPandals.map((pandal, idx) => {
                         const transit = routeData.transitInfo.get(pandal.name) || [];
+                        const nearestStation = transit[0];
 
                         return (
                           <div
-                            key={pandal.name}
-                            className="p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 transition-all flex items-start justify-between gap-2.5"
+                            key={`seq-${pandal.name}-${idx}`}
+                            className="p-3 rounded-2xl bg-white/[0.03] border border-white/10 flex items-start justify-between gap-3 hover:border-white/20 transition-all"
                           >
                             <div className="flex items-start gap-2.5 min-w-0">
-                              <div className="w-6 h-6 rounded-lg bg-[#d4af37] text-black font-bold text-xs flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                              <span className="w-6 h-6 rounded-lg bg-[#d4af37] text-black font-extrabold text-xs flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
                                 {idx + 1}
-                              </div>
+                              </span>
                               <div className="min-w-0 space-y-0.5">
-                                <h5 className="text-xs sm:text-sm font-bold text-white truncate">
-                                  {pandal.name}
-                                </h5>
-                                <p className="text-[11px] text-white/60 italic truncate">
-                                  {pandal.vibe}
-                                </p>
+                                <h5 className="text-sm font-bold text-white truncate">{pandal.name}</h5>
+                                <p className="text-[11px] text-white/60 truncate">{pandal.address}</p>
                                 
-                                {transit.length > 0 && (
-                                  <div className="flex items-center gap-1.5 text-[10px] text-sky-300 pt-0.5">
-                                    <Train size={10} className="shrink-0" />
-                                    <span className="truncate">
-                                      Near {transit[0].station.name} ({transit[0].distanceKm.toFixed(1)} km)
-                                    </span>
+                                {nearestStation && (
+                                  <div className="flex items-center gap-1.5 text-[10px] text-sky-300 bg-sky-500/10 px-2 py-0.5 rounded-md border border-sky-500/20 w-fit mt-1">
+                                    <Train size={10} />
+                                    <span>{nearestStation.station.name} ({nearestStation.distanceKm} km) • {nearestStation.station.pujoTimings}</span>
                                   </div>
                                 )}
                               </div>
                             </div>
 
                             <a
-                              href={pandal.directionsUrl}
+                              href={pandal.directionsUrl || `https://www.google.com/maps/dir/?api=1&destination=${pandal.lat},${pandal.lng}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="p-2 rounded-xl bg-white/10 hover:bg-[#d4af37] text-white hover:text-black transition-colors shrink-0"
-                              title="Direct Navigation"
+                              className="px-2 py-1 rounded-lg bg-white/10 hover:bg-[#d4af37] text-white hover:text-black text-[10px] font-medium transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                              title="Open single stop in Maps"
                             >
-                              <Navigation size={12} />
+                              <Navigation size={10} />
+                              <span>Map</span>
                             </a>
                           </div>
                         );
@@ -1109,311 +1105,289 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                 </div>
 
                 {/* ────────────────────────────────────────────────────────── */}
-                {/* RIGHT COLUMN: NEARBY RESTAURANTS & PUJO DINING (lg:col-span-5) */}
+                {/* RIGHT COLUMN: RESTAURANTS NEARBY & FILTER (lg:col-span-5)  */}
                 {/* ────────────────────────────────────────────────────────── */}
-                <div className="lg:col-span-5 space-y-3 flex flex-col">
+                <div className="lg:col-span-5 space-y-3.5 flex flex-col">
                   
-                  {/* Dining Header & Filter */}
-                  <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/15 space-y-2.5">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-7 h-7 rounded-lg bg-orange-500/20 text-orange-300 flex items-center justify-center border border-orange-500/30">
-                          <Utensils size={14} />
-                        </div>
+                  {/* Dining Header & Veg/Non-Veg Filter */}
+                  <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/15 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Utensils size={16} className="text-emerald-400" />
                         <div>
-                          <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
-                            <span>Pujo Dining & Snacks</span>
-                            <span className="text-[10px] font-normal text-white/50">({nearbyRestaurants.length})</span>
-                          </h4>
-                          <p className="text-[10px] text-white/50">
-                            Iconic eateries right beside this route
-                          </p>
+                          <h4 className="text-xs sm:text-sm font-bold text-white">Restaurants Near Me / Route</h4>
+                          <p className="text-[10px] text-white/60">Top-rated Kolkata food spots along your trail</p>
                         </div>
-                      </div>
-
-                      {/* Veg / Non-Veg Toggle Filter */}
-                      <div className="flex items-center bg-black/50 p-0.5 rounded-lg border border-white/10 text-[11px]">
-                        <button
-                          onClick={() => setRestaurantFilter('all')}
-                          className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                            restaurantFilter === 'all'
-                              ? 'bg-white/20 text-white font-bold'
-                              : 'text-white/50 hover:text-white'
-                          }`}
-                        >
-                          All
-                        </button>
-                        <button
-                          onClick={() => setRestaurantFilter('veg')}
-                          className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                            restaurantFilter === 'veg'
-                              ? 'bg-emerald-500 text-black font-bold'
-                              : 'text-emerald-400/70 hover:text-emerald-300'
-                          }`}
-                        >
-                          Veg
-                        </button>
-                        <button
-                          onClick={() => setRestaurantFilter('non-veg')}
-                          className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                            restaurantFilter === 'non-veg'
-                              ? 'bg-rose-500 text-white font-bold'
-                              : 'text-rose-400/70 hover:text-rose-300'
-                          }`}
-                        >
-                          Non-Veg
-                        </button>
                       </div>
                     </div>
 
-                    {/* Expandable Price Range & Sorting Controls Bar */}
-                    <div className="pt-2 border-t border-white/10 space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <button
-                          onClick={() => setIsPriceSortExpanded(!isPriceSortExpanded)}
-                          className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] font-semibold text-[#f4e5a9] flex items-center gap-1.5 transition-all cursor-pointer"
-                        >
-                          <SlidersHorizontal size={11} className="text-[#d4af37]" />
-                          <span>Filter Price & Sort</span>
-                          {isPriceSortExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                        </button>
+                    {/* Filter Tabs: All, Pure Veg, Non-Veg */}
+                    <div className="flex items-center gap-1.5 bg-black/40 p-1 rounded-xl border border-white/10">
+                      <button
+                        onClick={() => setRestaurantFilter('all')}
+                        className={`flex-1 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                          restaurantFilter === 'all'
+                            ? 'bg-white/20 text-white shadow-sm'
+                            : 'text-white/60 hover:text-white'
+                        }`}
+                      >
+                        All
+                      </button>
+                      <button
+                        onClick={() => setRestaurantFilter('veg')}
+                        className={`flex-1 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                          restaurantFilter === 'veg'
+                            ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                            : 'text-white/60 hover:text-emerald-400'
+                        }`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span>Pure Veg</span>
+                      </button>
+                      <button
+                        onClick={() => setRestaurantFilter('non-veg')}
+                        className={`flex-1 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                          restaurantFilter === 'non-veg'
+                            ? 'bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-sm'
+                            : 'text-white/60 hover:text-amber-400'
+                        }`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                        <span>Non-Veg</span>
+                      </button>
+                    </div>
 
-                        <div className="flex items-center gap-1.5 text-[10px] text-white/60">
-                          <span>Max:</span>
-                          <span className="font-bold text-[#d4af37] bg-black/40 px-2 py-0.5 rounded-md border border-[#d4af37]/30">
-                            {priceRangeLimit >= 2000 ? 'Any Price' : `₹${priceRangeLimit} for 2`}
+                    {/* Sort & Price Range Bar Toggle */}
+                    <div className="pt-0.5">
+                      <button
+                        onClick={() => setIsPriceSortExpanded(!isPriceSortExpanded)}
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-black/40 hover:bg-black/60 border border-[#d4af37]/30 hover:border-[#d4af37]/60 text-xs font-semibold text-white transition-all cursor-pointer shadow-sm group"
+                      >
+                        <div className="flex items-center gap-2 flex-wrap text-left">
+                          <SlidersHorizontal size={13} className="text-[#d4af37] group-hover:scale-110 transition-transform" />
+                          <span className="text-[#f4e5a9] font-bold">Sort & Price Filter</span>
+                          <span className="px-1.5 py-0.5 rounded-md bg-[#d4af37]/20 border border-[#d4af37]/40 text-[#f4e5a9] text-[10px] font-bold">
+                            {priceRangeLimit >= 2000 ? 'Any Budget' : `≤ ₹${priceRangeLimit}`}
+                          </span>
+                          <span className="text-[10px] text-white/50">
+                            • {restaurantSort === 'price-asc' ? '₹ Low to High' : restaurantSort === 'price-desc' ? '₹ High to Low' : restaurantSort === 'distance' ? '📍 Nearest' : '⭐ Top Rated'}
                           </span>
                         </div>
-                      </div>
-
-                      {/* Expanded Slider & Sorter Drawer */}
-                      {isPriceSortExpanded && (
-                        <div className="p-2.5 rounded-xl bg-black/60 border border-[#d4af37]/30 space-y-2.5 animate-fadeIn">
-                          {/* Price Range Moving Slider */}
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-[11px]">
-                              <span className="text-white/70 flex items-center gap-1">
-                                <IndianRupee size={10} className="text-[#d4af37]" />
-                                <span>Max Price For Two:</span>
-                              </span>
-                              <span className="font-extrabold text-[#d4af37]">
-                                {priceRangeLimit >= 2000 ? 'No limit (₹2000+)' : `Up to ₹${priceRangeLimit}`}
-                              </span>
-                            </div>
-                            
-                            <input
-                              type="range"
-                              min="150"
-                              max="2000"
-                              step="50"
-                              value={priceRangeLimit}
-                              onChange={(e) => setPriceRangeLimit(Number(e.target.value))}
-                              className="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#d4af37]"
-                            />
-                            
-                            <div className="flex items-center justify-between text-[9px] text-white/40">
-                              <span>₹150 (Street Food)</span>
-                              <span>₹750 (Casual Dine)</span>
-                              <span>₹2000+ (Fine Dine)</span>
-                            </div>
-                          </div>
-
-                          {/* Quick Budget Presets */}
-                          <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-white/10">
-                            <span className="text-[10px] text-white/50">Quick tiers:</span>
-                            <button
-                              onClick={() => setPriceRangeLimit(350)}
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all cursor-pointer ${
-                                priceRangeLimit === 350
-                                  ? 'bg-[#d4af37] text-black'
-                                  : 'bg-white/5 hover:bg-white/10 text-white/70 border border-white/10'
-                              }`}
-                            >
-                              Under ₹350
-                            </button>
-                            <button
-                              onClick={() => setPriceRangeLimit(750)}
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all cursor-pointer ${
-                                priceRangeLimit === 750
-                                  ? 'bg-[#d4af37] text-black'
-                                  : 'bg-white/5 hover:bg-white/10 text-white/70 border border-white/10'
-                              }`}
-                            >
-                              Under ₹750
-                            </button>
-                            <button
-                              onClick={() => setPriceRangeLimit(1200)}
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all cursor-pointer ${
-                                priceRangeLimit === 1200
-                                  ? 'bg-[#d4af37] text-black'
-                                  : 'bg-white/5 hover:bg-white/10 text-white/70 border border-white/10'
-                              }`}
-                            >
-                              Under ₹1200
-                            </button>
-                            <button
-                              onClick={() => setPriceRangeLimit(2000)}
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all cursor-pointer ${
-                                priceRangeLimit >= 2000
-                                  ? 'bg-sky-500 text-black'
-                                  : 'bg-white/5 hover:bg-white/10 text-white/70 border border-white/10'
-                              }`}
-                            >
-                              All Prices
-                            </button>
-                          </div>
-
-                          {/* Sort Options */}
-                          <div className="pt-1.5 border-t border-white/10 flex items-center justify-between flex-wrap gap-1.5">
-                            <span className="text-[10px] text-white/50 flex items-center gap-1">
-                              <ArrowUpDown size={10} className="text-[#d4af37]" />
-                              <span>Sort by:</span>
-                            </span>
-
-                            <div className="flex items-center gap-1 flex-wrap">
-                              <button
-                                onClick={() => setRestaurantSort('price-asc')}
-                                className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-all cursor-pointer ${
-                                  restaurantSort === 'price-asc'
-                                    ? 'bg-[#d4af37] text-black font-bold'
-                                    : 'bg-white/5 text-white/70 hover:text-white border border-white/10'
-                                }`}
-                              >
-                                Price: Low to High
-                              </button>
-                              <button
-                                onClick={() => setRestaurantSort('price-desc')}
-                                className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-all cursor-pointer ${
-                                  restaurantSort === 'price-desc'
-                                    ? 'bg-[#d4af37] text-black font-bold'
-                                    : 'bg-white/5 text-white/70 hover:text-white border border-white/10'
-                                }`}
-                              >
-                                Price: High to Low
-                              </button>
-                              <button
-                                onClick={() => setRestaurantSort('rating')}
-                                className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-all cursor-pointer ${
-                                  restaurantSort === 'rating'
-                                    ? 'bg-[#d4af37] text-black font-bold'
-                                    : 'bg-white/5 text-white/70 hover:text-white border border-white/10'
-                                }`}
-                              >
-                                Top Rated
-                              </button>
-                              <button
-                                onClick={() => setRestaurantSort('distance')}
-                                className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-all cursor-pointer ${
-                                  restaurantSort === 'distance'
-                                    ? 'bg-[#d4af37] text-black font-bold'
-                                    : 'bg-white/5 text-white/70 hover:text-white border border-white/10'
-                                }`}
-                              >
-                                Nearest First
-                              </button>
-                            </div>
-                          </div>
+                        <div className="flex items-center gap-1 text-white/60 shrink-0 ml-2">
+                          {isPriceSortExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                         </div>
-                      )}
+                      </button>
+
+                      {/* Moving Price Slider & Sort Controls (Expandable) */}
+                      <AnimatePresence>
+                        {isPriceSortExpanded && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="mt-2 p-3 rounded-xl bg-black/75 border border-[#d4af37]/30 space-y-3 backdrop-blur-xl">
+                              {/* Moving Price Range Bar */}
+                              <div className="space-y-1.5">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-white/90 font-medium flex items-center gap-1">
+                                    <IndianRupee size={12} className="text-[#d4af37]" />
+                                    <span>Max Budget for Two:</span>
+                                  </span>
+                                  <span className="font-bold text-[#f4e5a9] bg-[#d4af37]/20 px-2 py-0.5 rounded-md border border-[#d4af37]/35 font-mono">
+                                    {priceRangeLimit >= 2000 ? '₹2000+ (No Limit)' : `Up to ₹${priceRangeLimit}`}
+                                  </span>
+                                </div>
+
+                                {/* Interactive Moving Slider Bar */}
+                                <div className="relative py-1">
+                                  <input
+                                    type="range"
+                                    min="150"
+                                    max="2000"
+                                    step="50"
+                                    value={priceRangeLimit}
+                                    onChange={(e) => setPriceRangeLimit(Number(e.target.value))}
+                                    className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#d4af37] focus:outline-none focus:ring-1 focus:ring-[#d4af37]"
+                                  />
+                                  <div className="flex justify-between text-[9px] text-white/45 mt-1 font-mono">
+                                    <span>₹150</span>
+                                    <span>₹500</span>
+                                    <span>₹1000</span>
+                                    <span>₹1500</span>
+                                    <span>₹2000+</span>
+                                  </div>
+                                </div>
+
+                                {/* Quick Budget Tiers */}
+                                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                                  {[
+                                    { label: 'All', val: 2000 },
+                                    { label: 'Under ₹350', val: 350 },
+                                    { label: 'Under ₹750', val: 750 },
+                                    { label: 'Under ₹1200', val: 1200 },
+                                  ].map((tier) => (
+                                    <button
+                                      key={tier.label}
+                                      onClick={() => setPriceRangeLimit(tier.val)}
+                                      className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors cursor-pointer ${
+                                        priceRangeLimit === tier.val
+                                          ? 'bg-[#d4af37] text-black font-bold shadow-sm'
+                                          : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
+                                      }`}
+                                    >
+                                      {tier.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Sort Basis Options */}
+                              <div className="space-y-1.5 pt-2 border-t border-white/10">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-white/90 font-medium flex items-center gap-1">
+                                    <ArrowUpDown size={12} className="text-emerald-400" />
+                                    <span>Sort Restaurants By:</span>
+                                  </span>
+                                  <span className="text-[10px] text-white/40">
+                                    {nearbyRestaurants.length} matching spots
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                  {[
+                                    { id: 'price-asc', label: 'Price: Low to High', icon: '₹ ↑' },
+                                    { id: 'price-desc', label: 'Price: High to Low', icon: '₹ ↓' },
+                                    { id: 'rating', label: 'Top Rated', icon: '⭐' },
+                                    { id: 'distance', label: 'Nearest First', icon: '📍' },
+                                  ].map((opt) => (
+                                    <button
+                                      key={opt.id}
+                                      onClick={() => setRestaurantSort(opt.id as any)}
+                                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                                        restaurantSort === opt.id
+                                          ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                                          : 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/5'
+                                      }`}
+                                    >
+                                      <span>{opt.icon}</span>
+                                      <span className="truncate">{opt.label}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
 
-                  {/* Restaurants List */}
-                  <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[48vh] sm:max-h-[55vh] pr-1">
-                    {nearbyRestaurants.map((restaurant) => {
-                      const dist = calculateDistance(restaurant.lat, restaurant.lng);
-
-                      return (
-                        <div
-                          key={restaurant.id}
-                          className="p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 transition-all space-y-2 group"
+                  {/* Restaurants Cards List */}
+                  <div className="space-y-2.5">
+                    {nearbyRestaurants.length === 0 ? (
+                      <div className="text-center py-8 px-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3">
+                        <Utensils size={28} className="mx-auto text-white/30" />
+                        <p className="text-xs text-white/60">
+                          No restaurants found under ₹{priceRangeLimit} for this filter.
+                        </p>
+                        <button
+                          onClick={() => {
+                            setPriceRangeLimit(2000);
+                            setRestaurantFilter('all');
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer border border-white/10"
                         >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0 space-y-0.5">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <h5 className="text-xs sm:text-sm font-bold text-white group-hover:text-[#f4e5a9] transition-colors">
-                                  {restaurant.name}
-                                </h5>
-                                {restaurant.isPureVeg && (
-                                  <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                    Pure Veg
+                          <RotateCcw size={12} />
+                          <span>Reset Price & Filters</span>
+                        </button>
+                      </div>
+                    ) : (
+                      nearbyRestaurants.map((rest, idx) => {
+                        const dist = calculateDistance(rest.lat, rest.lng);
+                        const gmapsSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${rest.name} ${rest.address} Kolkata`)}`;
+
+                        return (
+                          <div
+                            key={`rest-${rest.id}-${idx}`}
+                            className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-emerald-500/40 transition-all space-y-2.5 group"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="space-y-0.5 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <h5 className="text-sm font-bold text-white group-hover:text-emerald-300 transition-colors truncate">
+                                    {rest.name}
+                                  </h5>
+                                  {rest.isPureVeg ? (
+                                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                      🌱 Pure Veg
+                                    </span>
+                                  ) : (
+                                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                      🍗 Non-Veg
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-white/60 truncate">{rest.cuisine}</p>
+                              </div>
+
+                              <div className="flex flex-col items-end shrink-0">
+                                <span className="text-xs font-bold text-amber-400 flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                                  <Star size={11} fill="currentColor" />
+                                  <span>{rest.rating}</span>
+                                </span>
+                                <span className="text-[11px] font-bold text-[#f4e5a9] mt-1 flex items-center gap-0.5">
+                                  <IndianRupee size={10} />
+                                  <span>{rest.priceForTwo} for 2</span>
+                                </span>
+                                {dist !== null && (
+                                  <span className="text-[10px] text-white/50 mt-0.5 flex items-center gap-0.5">
+                                    <MapPin size={9} />
+                                    <span>{dist.toFixed(1)} km</span>
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[11px] text-white/50 truncate">
-                                {restaurant.cuisine} • {restaurant.area}
-                              </p>
                             </div>
 
-                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold shrink-0">
-                              <Star size={10} fill="currentColor" />
-                              <span>{restaurant.rating}</span>
-                            </div>
-                          </div>
-
-                          {/* Must Try Dish Highlight */}
-                          <div className="p-2 rounded-xl bg-black/40 border border-white/5 text-[11px] flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <ChefHat size={12} className="text-[#d4af37] shrink-0" />
-                              <span className="text-white/80 truncate">
-                                Must Try: <strong className="text-white">{restaurant.mustTryDish}</strong>
-                              </span>
-                            </div>
-                            <span className="text-xs font-bold text-[#d4af37] shrink-0">
-                              {restaurant.mustTryPrice}
-                            </span>
-                          </div>
-
-                          {/* Distance & Actions */}
-                          <div className="flex items-center justify-between pt-1 text-xs">
-                            <div className="flex items-center gap-2 text-[11px] text-white/50">
-                              <span>~{restaurant.priceForTwoStr} for 2</span>
-                              {dist !== null && (
-                                <>
-                                  <span>•</span>
-                                  <span className="text-white/70">{dist.toFixed(1)} km away</span>
-                                </>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              {restaurant.menuItems && restaurant.menuItems.length > 0 && (
-                                <button
-                                  onClick={() => setSelectedMenuRestaurant(restaurant)}
-                                  className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium transition-all cursor-pointer"
+                            {/* Famous Dishes Tags */}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {rest.famousDishes.slice(0, 3).map((dish, dIdx) => (
+                                <span
+                                  key={`dish-${dIdx}`}
+                                  className="text-[10px] text-white/70 bg-white/5 px-2 py-0.5 rounded-md border border-white/10"
                                 >
-                                  Menu ({restaurant.menuItems.length})
-                                </button>
-                              )}
+                                  {dish}
+                                </span>
+                              ))}
+                            </div>
 
+                            {/* Action Buttons: 1. Direct Google Maps Location, 2. View Menu */}
+                            <div className="flex items-center gap-2 pt-1 border-t border-white/5">
                               <a
-                                href={restaurant.googleMapsUrl}
+                                href={gmapsSearchUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-2.5 py-1 rounded-lg bg-[#d4af37]/20 hover:bg-[#d4af37] text-[#d4af37] hover:text-black text-[11px] font-semibold transition-all flex items-center gap-1 cursor-pointer border border-[#d4af37]/40"
+                                className="flex-1 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-black text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-emerald-500/30 cursor-pointer"
+                                title="Open exact restaurant location in Google Maps"
                               >
-                                <Navigation size={10} />
-                                <span>Directions</span>
+                                <MapPin size={12} />
+                                <span>Open in Google Maps</span>
+                                <ExternalLink size={10} />
                               </a>
+
+                              <button
+                                onClick={() => setSelectedMenuRestaurant(rest)}
+                                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer border border-white/15"
+                                title="View menu items and pricing"
+                              >
+                                <ChefHat size={12} />
+                                <span>Menu & Prices</span>
+                              </button>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-
-                    {nearbyRestaurants.length === 0 && (
-                      <div className="p-6 text-center text-xs text-white/50 bg-white/[0.02] rounded-2xl border border-white/10 space-y-2">
-                        <p>No restaurants found matching this filter in this zone.</p>
-                        <button
-                          onClick={() => {
-                            setRestaurantFilter('all');
-                            setPriceRangeLimit(2000);
-                          }}
-                          className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold cursor-pointer"
-                        >
-                          Reset Filter
-                        </button>
-                      </div>
+                        );
+                      })
                     )}
                   </div>
 
@@ -1421,34 +1395,42 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
 
               </div>
 
-              {/* Modal Footer Controls */}
-              <div className="pt-3 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2.5 shrink-0">
+              {/* Bottom Confirmed Action Bar */}
+              <div className="pt-2.5 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2.5 shrink-0">
                 <button
                   onClick={() => setIsConfirmed(false)}
-                  className="text-xs text-white/60 hover:text-white flex items-center gap-1 cursor-pointer self-start sm:self-center"
+                  className="text-xs text-[#d4af37] hover:underline flex items-center gap-1 cursor-pointer self-start sm:self-center"
                 >
                   <ArrowLeft size={12} />
-                  <span>Back to pandals selection</span>
+                  <span>Change or add more pandals</span>
                 </button>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
                   <button
                     onClick={handlePlanRouteWithSelected}
-                    className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all cursor-pointer border border-white/15"
+                    className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-white/15"
                   >
-                    Open in Full Trip Planner
+                    <Route size={13} />
+                    <span>Trip Wizard</span>
                   </button>
 
                   <a
                     href={routeData?.googleMapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#e6ca65] text-black text-xs font-extrabold transition-all flex items-center gap-1.5 shadow-md cursor-pointer border border-amber-200"
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#e6ca65] hover:from-[#e6ca65] hover:to-[#d4af37] text-black text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
                   >
                     <Navigation size={13} />
-                    <span>Launch Google Maps ({confirmedPandals.length} Pandals)</span>
+                    <span>Navigation</span>
                     <ExternalLink size={11} />
                   </a>
+
+                  <button
+                    onClick={onClose}
+                    className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Done
+                  </button>
                 </div>
               </div>
 
@@ -1456,70 +1438,104 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
           )}
 
           {/* ═══════════════════════════════════════════════════════════ */}
-          {/* MENU POPUP MODAL (IF USER CLICKS 'MENU' ON ANY RESTAURANT) */}
+          {/* RESTAURANT MENU POPUP MODAL                                 */}
           {/* ═══════════════════════════════════════════════════════════ */}
-          {selectedMenuRestaurant && (
-            <div className="absolute inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full max-w-lg rounded-2xl bg-[#12151f] border border-[#d4af37]/40 p-4 sm:p-5 shadow-2xl space-y-3 max-h-[85vh] flex flex-col text-left"
-              >
-                <div className="flex items-center justify-between pb-2 border-b border-white/10 shrink-0">
-                  <div>
-                    <h4 className="text-base font-bold text-white flex items-center gap-2">
-                      <span>{selectedMenuRestaurant.name}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                        Menu
-                      </span>
-                    </h4>
-                    <p className="text-xs text-white/50">{selectedMenuRestaurant.cuisine} • {selectedMenuRestaurant.area}</p>
-                  </div>
-                  <button
-                    onClick={() => setSelectedMenuRestaurant(null)}
-                    className="p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors cursor-pointer"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
+          <AnimatePresence>
+            {selectedMenuRestaurant && (
+              <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-6">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setSelectedMenuRestaurant(null)}
+                  className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+                />
 
-                {/* Menu items list */}
-                <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-                  {selectedMenuRestaurant.menuItems?.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="p-2.5 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-between gap-3"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`w-2 h-2 rounded-full ${item.isVeg ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-                          <h6 className="text-xs font-bold text-white truncate">{item.name}</h6>
-                        </div>
-                        {item.category && (
-                          <span className="text-[10px] text-white/40">{item.category}</span>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="relative w-full max-w-lg rounded-3xl glass-panel border border-white/20 p-5 shadow-2xl z-20 my-auto overflow-hidden text-left bg-[#0e1017] flex flex-col max-h-[85vh]"
+                >
+                  <div className="flex items-start justify-between pb-3 border-b border-white/10 shrink-0">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-white">{selectedMenuRestaurant.name}</h3>
+                        {selectedMenuRestaurant.isPureVeg ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            🌱 Pure Veg
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                            🍗 Non-Veg
+                          </span>
                         )}
                       </div>
-                      <span className="text-xs font-bold text-[#d4af37] shrink-0">{item.price}</span>
+                      <p className="text-xs text-white/60">{selectedMenuRestaurant.address}</p>
+                      <p className="text-[11px] text-amber-400">🕒 {selectedMenuRestaurant.timing}</p>
                     </div>
-                  ))}
-                </div>
 
-                <div className="pt-2 border-t border-white/10 flex items-center justify-between shrink-0">
-                  <span className="text-xs text-white/50">Approx ~{selectedMenuRestaurant.priceForTwoStr} for two</span>
-                  <a
-                    href={selectedMenuRestaurant.googleMapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3.5 py-1.5 rounded-xl bg-[#d4af37] text-black text-xs font-bold hover:bg-[#e6ca65] transition-colors flex items-center gap-1"
-                  >
-                    <Navigation size={11} />
-                    <span>Get Directions</span>
-                  </a>
-                </div>
-              </motion.div>
-            </div>
-          )}
+                    <button
+                      onClick={() => setSelectedMenuRestaurant(null)}
+                      className="p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white cursor-pointer"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {/* Menu Items List */}
+                  <div className="flex-1 overflow-y-auto space-y-2 py-3 pr-1">
+                    <h4 className="text-xs font-bold text-[#d4af37] uppercase tracking-wider">
+                      Special Pujo Menu & Exact Prices
+                    </h4>
+
+                    {selectedMenuRestaurant.menu.map((item, mIdx) => (
+                      <div
+                        key={`menu-${mIdx}`}
+                        className="p-3 rounded-xl bg-white/[0.03] border border-white/10 flex items-start justify-between gap-3 hover:border-white/20"
+                      >
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${item.isVeg ? 'bg-emerald-400' : 'bg-rose-500'}`} />
+                            <span className="text-sm font-bold text-white">{item.name}</span>
+                            {item.isBestseller && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                ⭐ Bestseller
+                              </span>
+                            )}
+                          </div>
+                          {item.description && (
+                            <p className="text-[11px] text-white/60">{item.description}</p>
+                          )}
+                        </div>
+
+                        <span className="text-sm font-bold text-[#f4e5a9] bg-[#d4af37]/10 px-2.5 py-1 rounded-lg border border-[#d4af37]/20 shrink-0">
+                          ₹{item.price}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Direct Map Open Button */}
+                  <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2 shrink-0">
+                    <span className="text-xs text-white/50">Avg. ₹{selectedMenuRestaurant.priceForTwo} for two</span>
+                    
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selectedMenuRestaurant.name} ${selectedMenuRestaurant.address} Kolkata`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+                    >
+                      <MapPin size={13} />
+                      <span>Open Location in Google Maps</span>
+                      <ExternalLink size={11} />
+                    </a>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
 
         </motion.div>
       </div>
