@@ -207,11 +207,23 @@ const DashboardContent: React.FC = () => {
 
         {/* Date Selector (Bottom portion of the screen - only shown when on landing page with no day selected) */}
         {!selectedDay && (
-          <footer className="w-full">
+          <footer className="w-full pb-3 flex flex-col items-center">
             <DaySelector
               onOpenModal={() => setIsDayModalOpen(true)}
               onOpenPlanTrip={() => setIsPlanTripOpen(true)}
             />
+            <div className="mt-2 text-[10px] sm:text-[11px] font-mono tracking-wider text-white/30 select-none">
+              made by - <span className="text-[#d4af37]/60 hover:text-[#d4af37] transition-colors">soutrik_2006</span>
+            </div>
+          </footer>
+        )}
+
+        {/* Persistent bottom credit when a day is selected */}
+        {selectedDay && (
+          <footer className="w-full pb-3 flex justify-center">
+            <div className="text-[10px] sm:text-[11px] font-mono tracking-wider text-white/30 select-none">
+              made by - <span className="text-[#d4af37]/60 hover:text-[#d4af37] transition-colors">soutrik_2006</span>
+            </div>
           </footer>
         )}
 

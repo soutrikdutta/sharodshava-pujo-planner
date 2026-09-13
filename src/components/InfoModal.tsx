@@ -75,19 +75,29 @@ export const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
               </div>
             </div>
 
+            {/* About / Definition of Sharodshav */}
+            <div className="mb-4 p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-left">
+              <h4 className="text-[11px] uppercase tracking-wider text-[#d4af37] font-semibold mb-1.5 flex items-center gap-1.5">
+                <span>About Sharodshav</span>
+              </h4>
+              <p className="text-xs text-white/75 leading-relaxed font-light">
+                <strong className="text-white font-medium">Sharodshav</strong> is an intelligent, real-time Durga Puja festival companion designed for Kolkata. It helps devotees effortlessly discover pandals, navigate optimal transit routes, avoid peak crowd congestion, and celebrate the grand autumn carnival together.
+              </p>
+            </div>
+
             {/* Creator Credits Section */}
-            <div className="pt-2 pb-4">
-              <p className="text-xs uppercase tracking-widest text-white/40 mb-3 font-medium">
+            <div className="pt-1 pb-3">
+              <p className="text-[11px] uppercase tracking-widest text-white/40 mb-2.5 font-medium">
                 {DURGA_PUJA_2026.creatorCredits.title}
               </p>
               
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {DURGA_PUJA_2026.creatorCredits.creators.map((name) => (
                   <div
                     key={name}
-                    className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/15 transition-all"
+                    className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-white/15 transition-all"
                   >
-                    <span className="text-sm font-medium text-white/90">
+                    <span className="text-xs font-medium text-white/90">
                       {name}
                     </span>
                     <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37]/70" />

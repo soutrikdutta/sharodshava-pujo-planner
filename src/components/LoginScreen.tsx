@@ -253,10 +253,15 @@ export const LoginScreen: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.9 }}
-          className="mt-3 flex items-center justify-center space-x-1.5 text-[10px] text-white/30 font-mono"
+          className="mt-3 flex flex-col items-center space-y-1 text-[10px] text-white/30 font-mono"
         >
-          <ShieldCheck size={11} className="text-emerald-500/60" />
-          <span>GCP OAuth 2.0 • Google Identity Services</span>
+          <div className="flex items-center justify-center space-x-1.5">
+            <ShieldCheck size={11} className="text-emerald-500/60" />
+            <span>GCP OAuth 2.0 • Google Identity Services</span>
+          </div>
+          <div className="text-[10px] text-white/30 tracking-wider">
+            made by - <span className="text-[#d4af37]/60">soutrik_2006</span>
+          </div>
         </motion.div>
       </motion.div>
 
