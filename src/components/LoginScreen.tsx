@@ -1,16 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ShieldCheck, 
   MapPin, 
   AlertCircle, 
-  Settings, 
   Key, 
   Check, 
-  ExternalLink,
-  HelpCircle,
-  X,
-  Loader2
+  ExternalLink, 
+  HelpCircle, 
+  X 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
@@ -19,7 +16,6 @@ import { processGcpCredential } from '../services/gcpAuth';
 export const LoginScreen: React.FC = () => {
   const { 
     setUserFromGcp, 
-    isGcpConfigured, 
     gcpClientId, 
     setGcpClientId 
   } = useAuth();
@@ -29,8 +25,7 @@ export const LoginScreen: React.FC = () => {
   const [showGcpConfigModal, setShowGcpConfigModal] = useState(false);
   const [clientIdInput, setClientIdInput] = useState(gcpClientId || '');
   const [savedSuccess, setSavedSuccess] = useState(false);
-  const [isGisReady, setIsGisReady] = useState(false);
-
+  
   const googleButtonContainerRef = useRef<HTMLDivElement>(null);
 
   // Initialize official Google Identity Services (GIS) button
@@ -64,7 +59,7 @@ export const LoginScreen: React.FC = () => {
           googleButtonContainerRef.current.innerHTML = '';
           window.google.accounts.id.renderButton(googleButtonContainerRef.current, {
             type: 'standard',
-            theme: 'outline',
+            theme: 'filled_black',
             size: 'large',
             text: 'signin_with',
             shape: 'pill',
@@ -72,8 +67,7 @@ export const LoginScreen: React.FC = () => {
             width: 280
           });
 
-          setIsGisReady(true);
-
+          
           // Also trigger One Tap prompt
           try {
             window.google.accounts.id.prompt();
@@ -111,22 +105,6 @@ export const LoginScreen: React.FC = () => {
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
       
-      {/* Top Right GCP Settings Button */}
-      <div className="absolute top-4 right-4 z-20">
-        <button
-          onClick={() => setShowGcpConfigModal(true)}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 border cursor-pointer ${
-            isGcpConfigured
-              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25'
-              : 'bg-white/10 border-white/20 text-white/70 hover:text-white hover:bg-white/15'
-          }`}
-          title="Configure Google Cloud Platform (GCP) OAuth Client ID"
-        >
-          <Settings size={13} className={isGcpConfigured ? 'text-emerald-400' : 'text-[#d4af37]'} />
-          <span>{isGcpConfigured ? 'GCP OAuth Connected' : 'GCP Settings'}</span>
-        </button>
-      </div>
-
       {/* Centered Login Panel */}
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.96 }}
@@ -182,24 +160,6 @@ export const LoginScreen: React.FC = () => {
         {/* Divider */}
         <div className="my-5 h-[1px] w-full bg-gradient-to-r from-transparent via-white/15 to-transparent" />
 
-        {/* Status Pill */}
-        <div className="mb-5 flex items-center justify-center gap-1.5">
-          {isGcpConfigured ? (
-            <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-medium flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              GCP Google OAuth Ready
-            </span>
-          ) : (
-            <button
-              onClick={() => setShowGcpConfigModal(true)}
-              className="px-2.5 py-1 rounded-full bg-[#d4af37]/15 hover:bg-[#d4af37]/25 border border-[#d4af37]/30 text-[#f4e5a9] text-[10px] font-medium flex items-center gap-1 cursor-pointer transition-all"
-            >
-              <Key size={11} />
-              <span>Connect GCP OAuth Client ID</span>
-            </button>
-          )}
-        </div>
-
         {/* Error message */}
         {loginError && (
           <motion.div
@@ -212,15 +172,26 @@ export const LoginScreen: React.FC = () => {
           </motion.div>
         )}
 
-        {/* The ONLY Official Google Sign-In Button Container */}
-        <div className="flex justify-center min-h-[44px] items-center my-2">
-          {!isGisReady && (
-            <div className="flex items-center gap-2 text-xs text-white/50">
-              <Loader2 size={16} className="animate-spin text-[#d4af37]" />
-              <span>Loading Google Sign-In...</span>
+        {/* Constant Rounded Google Sign-In Button */}
+        <div className="flex justify-center items-center my-3">
+          <div className="relative w-[280px] h-[46px] rounded-full overflow-hidden shadow-lg border border-white/20 hover:border-[#d4af37]/60 transition-all duration-300 group cursor-pointer bg-white text-gray-800 flex items-center justify-center font-medium text-sm select-none hover:shadow-[0_0_20px_rgba(212,175,55,0.25)]">
+            <div className="flex items-center gap-3 px-4 pointer-events-none">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center bg-white shadow-sm border border-black/5 shrink-0 overflow-hidden p-1">
+                <svg className="w-full h-full object-contain" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+              </div>
+              <span className="tracking-tight font-medium text-gray-700 group-hover:text-black transition-colors">Sign in with Google</span>
             </div>
-          )}
-          <div ref={googleButtonContainerRef} className={!isGisReady ? 'hidden' : ''} />
+            {/* Google Identity Services button container overlays cleanly */}
+            <div 
+              ref={googleButtonContainerRef} 
+              className="absolute inset-0 opacity-0 z-10 flex items-center justify-center cursor-pointer [&>div]:w-full [&>div]:h-full [&_iframe]:w-full [&_iframe]:h-full" 
+            />
+          </div>
         </div>
 
         {/* Location status badge */}
@@ -255,10 +226,6 @@ export const LoginScreen: React.FC = () => {
           transition={{ duration: 0.6, delay: 0.9 }}
           className="mt-3 flex flex-col items-center space-y-1 text-[10px] text-white/30 font-mono"
         >
-          <div className="flex items-center justify-center space-x-1.5">
-            <ShieldCheck size={11} className="text-emerald-500/60" />
-            <span>GCP OAuth 2.0 • Google Identity Services</span>
-          </div>
           <div className="text-[10px] text-white/30 tracking-wider">
             made by - <span className="text-[#d4af37]/60">soutrik_2006</span>
           </div>
