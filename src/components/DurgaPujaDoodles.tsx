@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
 export type PujaDayKey = 'shashti' | 'saptami' | 'ashtami' | 'navami' | 'dashami' | 'mahalaya' | string;
 
@@ -13,18 +12,15 @@ interface DayDoodleProps {
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. SHASHTI DOODLE: Sacred Shankha (Conch), Bilva Leaves (Bel Pata) & Dhaak
 // ─────────────────────────────────────────────────────────────────────────────
-export const ShashtiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ size = 96, animated = true }) => {
+export const ShashtiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ size = 96, animated: _animated = true }) => {
   return (
-    <motion.svg
+    <svg
       width={size}
       height={size}
       viewBox="0 0 120 120"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className="drop-shadow-[0_4px_20px_rgba(212,175,55,0.4)]"
-      initial={animated ? { rotate: -4, scale: 0.95 } : undefined}
-      animate={animated ? { rotate: [ -4, 4, -4 ], scale: [ 0.95, 1.02, 0.95 ] } : undefined}
-      transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
     >
       <defs>
         <radialGradient id="shashti-gold" cx="50%" cy="50%" r="50%">
@@ -91,29 +87,26 @@ export const ShashtiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({
       </g>
 
       {/* Sound Waves & Sparkles */}
-      <motion.circle cx="95" cy="40" r="2.5" fill="#ffd700" animate={{ scale: [1, 1.6, 1], opacity: [0.6, 1, 0.6] }} transition={{ duration: 2, repeat: Infinity }} />
-      <motion.circle cx="85" cy="25" r="1.5" fill="#ffffff" animate={{ scale: [0.8, 1.4, 0.8], opacity: [0.4, 0.9, 0.4] }} transition={{ duration: 1.8, repeat: Infinity, delay: 0.4 }} />
-      <motion.path d="M 86 52 Q 94 48 98 40" stroke="#fde047" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.8" />
-      <motion.path d="M 90 58 Q 100 54 105 44" stroke="#fde047" strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.6" />
-    </motion.svg>
+      <circle cx="95" cy="40" r="2.5" fill="#ffd700" />
+      <circle cx="85" cy="25" r="1.5" fill="#ffffff" />
+      <path d="M 86 52 Q 94 48 98 40" stroke="#fde047" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.8" />
+      <path d="M 90 58 Q 100 54 105 44" stroke="#fde047" strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.6" />
+    </svg>
   );
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. SAPTAMI DOODLE: Nabapatrika (Kola Bou) & Sacred Mangal Ghat
 // ─────────────────────────────────────────────────────────────────────────────
-export const SaptamiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ size = 96, animated = true }) => {
+export const SaptamiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ size = 96, animated: _animated = true }) => {
   return (
-    <motion.svg
+    <svg
       width={size}
       height={size}
       viewBox="0 0 120 120"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className="drop-shadow-[0_4px_20px_rgba(245,158,11,0.4)]"
-      initial={animated ? { rotate: 3, scale: 0.96 } : undefined}
-      animate={animated ? { rotate: [ 3, -3, 3 ], scale: [ 0.96, 1.03, 0.96 ] } : undefined}
-      transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut' }}
     >
       <defs>
         <linearGradient id="saptami-saree" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -187,26 +180,23 @@ export const SaptamiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({
       {/* Floating Ganga Water Ripple / Flowers */}
       <path d="M 20 95 Q 60 90 100 95" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
       <path d="M 30 101 Q 60 98 90 101" stroke="#38bdf8" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
-      <motion.circle cx="95" cy="30" r="3" fill="#f59e0b" animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 2.2, repeat: Infinity }} />
-    </motion.svg>
+      <circle cx="95" cy="30" r="3" fill="#f59e0b" />
+    </svg>
   );
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. ASHTAMI DOODLE: Divine Third Eye (Trinayani), Trishul & 108 Lotuses
 // ─────────────────────────────────────────────────────────────────────────────
-export const AshtamiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ size = 96, animated = true }) => {
+export const AshtamiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ size = 96, animated: _animated = true }) => {
   return (
-    <motion.svg
+    <svg
       width={size}
       height={size}
       viewBox="0 0 120 120"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className="drop-shadow-[0_4px_24px_rgba(220,38,38,0.5)]"
-      initial={animated ? { scale: 0.96 } : undefined}
-      animate={animated ? { scale: [ 0.96, 1.04, 0.96 ] } : undefined}
-      transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
     >
       <defs>
         <linearGradient id="ashtami-gold" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -291,25 +281,22 @@ export const AshtamiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({
         <ellipse cx="6" cy="6" rx="6" ry="3" fill="#ca8a04" stroke="#78350f" strokeWidth="1" />
         <path d="M 6 4 C 4 0, 8 0, 6 4" fill="url(#ashtami-fire)" />
       </g>
-    </motion.svg>
+    </svg>
   );
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. NAVAMI DOODLE: Maha Aarti Dhunuchi, Aromatic Smoke & Fire Embers
 // ─────────────────────────────────────────────────────────────────────────────
-export const NavamiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ size = 96, animated = true }) => {
+export const NavamiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ size = 96, animated: _animated = true }) => {
   return (
-    <motion.svg
+    <svg
       width={size}
       height={size}
       viewBox="0 0 120 120"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className="drop-shadow-[0_4px_22px_rgba(249,115,22,0.45)]"
-      initial={animated ? { rotate: -3, scale: 0.96 } : undefined}
-      animate={animated ? { rotate: [ -3, 3, -3 ], scale: [ 0.96, 1.03, 0.96 ] } : undefined}
-      transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
     >
       <defs>
         <linearGradient id="navami-dhunuchi" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -328,17 +315,15 @@ export const NavamiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ 
       <circle cx="60" cy="60" r="48" stroke="#f97316" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
 
       {/* Swirling Holy Dhuno Smoke Spirals */}
-      <motion.path
+      <path
         d="M 50 35 C 40 25, 45 15, 55 10 C 65 5, 75 12, 70 20 C 65 28, 55 24, 60 35"
         stroke="#ffffff"
         strokeWidth="2.5"
         strokeLinecap="round"
         fill="none"
         opacity="0.8"
-        animate={{ opacity: [0.6, 0.9, 0.6], pathLength: [0.8, 1, 0.8] }}
-        transition={{ duration: 3, repeat: Infinity }}
       />
-      <motion.path
+      <path
         d="M 68 32 C 78 22, 85 18, 90 12"
         stroke="#fef08a"
         strokeWidth="1.8"
@@ -346,7 +331,7 @@ export const NavamiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ 
         fill="none"
         opacity="0.7"
       />
-      <motion.path
+      <path
         d="M 42 32 C 32 24, 28 16, 35 8"
         stroke="#fed7aa"
         strokeWidth="1.5"
@@ -356,9 +341,9 @@ export const NavamiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ 
       />
 
       {/* Glowing Embers & Flying Sparks */}
-      <motion.circle cx="52" cy="18" r="2" fill="#fdba74" animate={{ y: [-2, -8, -2], opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.8, repeat: Infinity }} />
-      <motion.circle cx="75" cy="14" r="1.5" fill="#fef08a" animate={{ y: [-1, -6, -1], opacity: [0.3, 0.9, 0.3] }} transition={{ duration: 2.2, repeat: Infinity, delay: 0.3 }} />
-      <motion.circle cx="62" cy="6" r="2.5" fill="#f97316" animate={{ scale: [1, 1.5, 1] }} transition={{ duration: 2, repeat: Infinity }} />
+      <circle cx="52" cy="18" r="2" fill="#fdba74" />
+      <circle cx="75" cy="14" r="1.5" fill="#fef08a" />
+      <circle cx="62" cy="6" r="2.5" fill="#f97316" />
 
       {/* Dancing Fire Flames Inside Dhunuchi */}
       <path d="M 52 48 C 46 36, 56 30, 52 24 C 60 30, 64 36, 58 48 Z" fill="url(#navami-flame)" />
@@ -393,25 +378,22 @@ export const NavamiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ 
       {/* Crossed Dhaak Kathi (Sticks) on Bottom Right */}
       <path d="M 85 75 L 105 105" stroke="#fde047" strokeWidth="2.5" strokeLinecap="round" />
       <path d="M 105 75 L 85 105" stroke="#fde047" strokeWidth="2.5" strokeLinecap="round" />
-    </motion.svg>
+    </svg>
   );
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 5. DASHAMI DOODLE: Sindoor Khela Pot, Paan Leaf, Sandesh & Shuvo Bijoya Alpana
 // ─────────────────────────────────────────────────────────────────────────────
-export const DashamiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ size = 96, animated = true }) => {
+export const DashamiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ size = 96, animated: _animated = true }) => {
   return (
-    <motion.svg
+    <svg
       width={size}
       height={size}
       viewBox="0 0 120 120"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className="drop-shadow-[0_4px_22px_rgba(225,29,72,0.45)]"
-      initial={animated ? { rotate: 2, scale: 0.95 } : undefined}
-      animate={animated ? { rotate: [ 2, -2, 2 ], scale: [ 0.95, 1.03, 0.95 ] } : undefined}
-      transition={{ duration: 4.6, repeat: Infinity, ease: 'easeInOut' }}
     >
       <defs>
         <linearGradient id="dashami-red" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -500,29 +482,26 @@ export const DashamiDoodle: React.FC<{ size?: number; animated?: boolean }> = ({
       </g>
 
       {/* Sindoor Khela Flying Red Powder (Abir / Sindoor) Specks */}
-      <motion.circle cx="25" cy="15" r="2" fill="#f43f5e" animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, repeat: Infinity }} />
-      <motion.circle cx="95" cy="28" r="2.5" fill="#f43f5e" animate={{ scale: [1, 1.6, 1], opacity: [0.6, 1, 0.6] }} transition={{ duration: 2.4, repeat: Infinity, delay: 0.2 }} />
-      <motion.circle cx="98" cy="55" r="1.5" fill="#e11d48" animate={{ y: [-2, 2, -2] }} transition={{ duration: 1.8, repeat: Infinity }} />
-      <motion.circle cx="16" cy="70" r="2" fill="#fb7185" animate={{ scale: [0.8, 1.3, 0.8] }} transition={{ duration: 2.1, repeat: Infinity }} />
-    </motion.svg>
+      <circle cx="25" cy="15" r="2" fill="#f43f5e" />
+      <circle cx="95" cy="28" r="2.5" fill="#f43f5e" />
+      <circle cx="98" cy="55" r="1.5" fill="#e11d48" />
+      <circle cx="16" cy="70" r="2" fill="#fb7185" />
+    </svg>
   );
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 6. MAHALAYA / GENERAL PUJO DOODLE: Kaash Phool & Divine Chokkhudan Eyes
 // ─────────────────────────────────────────────────────────────────────────────
-export const MahalayaDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ size = 96, animated = true }) => {
+export const MahalayaDoodle: React.FC<{ size?: number; animated?: boolean }> = ({ size = 96, animated: _animated = true }) => {
   return (
-    <motion.svg
+    <svg
       width={size}
       height={size}
       viewBox="0 0 120 120"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className="drop-shadow-[0_4px_20px_rgba(212,175,55,0.4)]"
-      initial={animated ? { scale: 0.95 } : undefined}
-      animate={animated ? { scale: [ 0.95, 1.03, 0.95 ] } : undefined}
-      transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
     >
       <defs>
         <linearGradient id="mah-gold" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -566,8 +545,8 @@ export const MahalayaDoodle: React.FC<{ size?: number; animated?: boolean }> = (
       </g>
 
       {/* Floating Autumn Stars */}
-      <motion.circle cx="60" cy="18" r="2.5" fill="#ffd700" animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, repeat: Infinity }} />
-    </motion.svg>
+      <circle cx="60" cy="18" r="2.5" fill="#ffd700" />
+    </svg>
   );
 };
 
