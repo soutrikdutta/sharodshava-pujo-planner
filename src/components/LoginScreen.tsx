@@ -41,6 +41,7 @@ const GoogleLogo: React.FC = () => (
 export const LoginScreen: React.FC = () => {
   const { 
     setUserFromGcp, 
+    loginAsGuest,
     gcpClientId, 
     setGcpClientId 
   } = useAuth();
@@ -314,6 +315,17 @@ export const LoginScreen: React.FC = () => {
                 )}
               </div>
             </motion.button>
+          </div>
+
+          {/* Quick Instant Devotee Demo Access Fallback */}
+          <div className="mt-2.5 mb-1 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => loginAsGuest('Guest Devotee')}
+              className="text-[11px] text-white/50 hover:text-[#f4e5a9] underline transition-colors cursor-pointer flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-white/5"
+            >
+              <span>Explore as Guest / Demo Devotee</span>
+            </button>
           </div>
 
           {/* Location badge */}

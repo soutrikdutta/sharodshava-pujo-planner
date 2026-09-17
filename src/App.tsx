@@ -152,19 +152,7 @@ const DashboardContent: React.FC = () => {
 
   // First Screen: Google Login
   if (!user) {
-    return (
-      <AnimatePresence mode="wait">
-        <motion.div
-          key="login"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 0.98 }}
-          transition={{ duration: 0.5 }}
-        >
-          <LoginScreen />
-        </motion.div>
-      </AnimatePresence>
-    );
+    return <LoginScreen />;
   }
 
   // Authenticated Main Dashboard
