@@ -14,74 +14,22 @@ import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
 import { processGcpCredential } from '../services/gcpAuth';
 
-// Floating particle config
-const PARTICLES = Array.from({ length: 14 }, (_, i) => ({
-  id: i,
-  size: 2 + Math.random() * 3,
-  x: Math.random() * 100,
-  delay: Math.random() * 6,
-  duration: 8 + Math.random() * 7,
-  drift: -20 + Math.random() * 40,
-  opacity: 0.15 + Math.random() * 0.35,
-}));
+// Floating particle specs using pure CSS animation coordinates to avoid any JS evaluation bugs
+const PARTICLES = [
+  { id: 0, size: 3, left: 8, delay: 0.2, duration: 9 },
+  { id: 1, size: 2, left: 18, delay: 2.1, duration: 11 },
+  { id: 2, size: 4, left: 28, delay: 1.0, duration: 10 },
+  { id: 3, size: 3, left: 38, delay: 3.4, duration: 8 },
+  { id: 4, size: 2, left: 48, delay: 0.8, duration: 12 },
+  { id: 5, size: 4, left: 58, delay: 2.7, duration: 9 },
+  { id: 6, size: 3, left: 68, delay: 1.5, duration: 11 },
+  { id: 7, size: 2, left: 78, delay: 4.0, duration: 8.5 },
+  { id: 8, size: 4, left: 88, delay: 0.5, duration: 10.5 },
+  { id: 9, size: 3, left: 94, delay: 2.9, duration: 9.5 },
+];
 
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.12, delayChildren: 0.2 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 24, filter: 'blur(6px)' },
-  visible: {
-    opacity: 1,
-    y: 0,
-    filter: 'blur(0px)',
-    transition: { duration: 0.7, ease: 'easeOut' as const },
-  },
-};
-
-const logoVariants = {
-  hidden: { opacity: 0, scale: 0.5, rotate: -12 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    rotate: 0,
-    transition: { type: 'spring' as const, damping: 15, stiffness: 180, delay: 0.1 },
-  },
-};
-
-const shimmerVariants = {
-  initial: { x: '-100%' },
-  animate: {
-    x: '200%',
-    transition: { duration: 2.5, ease: 'easeInOut' as const, repeat: Infinity, repeatDelay: 4 },
-  },
-};
-
-const pulseGlow = {
-  animate: {
-    boxShadow: [
-      '0 0 20px 0px rgba(212, 175, 55, 0.15)',
-      '0 0 40px 8px rgba(212, 175, 55, 0.3)',
-      '0 0 20px 0px rgba(212, 175, 55, 0.15)',
-    ],
-    transition: { duration: 3, ease: 'easeInOut' as const, repeat: Infinity },
-  },
-};
-
-const floatAnimation = {
-  animate: {
-    y: [0, -8, 0],
-    transition: { duration: 4, ease: 'easeInOut' as const, repeat: Infinity },
-  },
-};
-
-// Google logo SVG
-const GoogleLogo = () => (
+// Clean Google brand SVG
+const GoogleLogo: React.FC = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -104,15 +52,14 @@ export const LoginScreen: React.FC = () => {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isGisReady, setIsGisReady] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [buttonHovered, setButtonHovered] = useState(false);
 
   const googleButtonContainerRef = useRef<HTMLDivElement>(null);
   const gisInitializedRef = useRef(false);
   const signingInRef = useRef(false);
 
-  // Initialize Google Identity Services
+  // Initialize Google Identity Services (GIS)
   const initializeGis = useCallback(() => {
-    if (!gcpClientId || !window.google?.accounts?.id || !googleButtonContainerRef.current) {
+    if (!gcpClientId || typeof window === 'undefined' || !window.google?.accounts?.id || !googleButtonContainerRef.current) {
       return false;
     }
     if (gisInitializedRef.current) return true;
@@ -128,7 +75,7 @@ export const LoginScreen: React.FC = () => {
             if (user) {
               setUserFromGcp(user);
             } else {
-              setLoginError('Failed to decode Google user profile.');
+              setLoginError('Failed to decode Google profile.');
             }
           }
         },
@@ -136,7 +83,7 @@ export const LoginScreen: React.FC = () => {
         cancel_on_tap_outside: true,
       });
 
-      // Render the official Google button inside our hidden container
+      // Render official Google button into overlay/hidden element
       googleButtonContainerRef.current.innerHTML = '';
       window.google.accounts.id.renderButton(googleButtonContainerRef.current, {
         type: 'standard',
@@ -163,7 +110,7 @@ export const LoginScreen: React.FC = () => {
     gisInitializedRef.current = false;
 
     let attempts = 0;
-    const maxAttempts = 50;
+    const maxAttempts = 60;
 
     const tryInit = () => {
       attempts++;
@@ -175,23 +122,21 @@ export const LoginScreen: React.FC = () => {
     };
 
     tryInit();
-    const timer = setInterval(tryInit, 200);
+    const timer = setInterval(tryInit, 250);
     return () => clearInterval(timer);
   }, [gcpClientId, initializeGis]);
 
-  // Sign-in handler — click hidden Google button then fall back to prompt
+  // Sign-in trigger: clicks Google button & triggers prompt fallback
   const handleGoogleSignIn = useCallback(() => {
     if (signingInRef.current) return;
     signingInRef.current = true;
     setIsSigningIn(true);
     setLoginError(null);
 
-    // Strategy 1: Click the real Google rendered button
-    const googleDiv = googleButtonContainerRef.current?.querySelector('[role="button"]') as HTMLElement | null;
+    const googleBtn = googleButtonContainerRef.current?.querySelector('[role="button"]') as HTMLElement | null;
     
-    if (googleDiv) {
-      googleDiv.click();
-      // Fallback: if nothing happens after a moment, use prompt
+    if (googleBtn) {
+      googleBtn.click();
       setTimeout(() => {
         if (signingInRef.current) {
           try {
@@ -200,29 +145,27 @@ export const LoginScreen: React.FC = () => {
             // ignore
           }
         }
-      }, 1500);
+      }, 1200);
     } else {
-      // Strategy 2: Direct prompt (most reliable fallback)
       try {
         window.google?.accounts?.id?.prompt((notification: any) => {
           if (notification?.isNotDisplayed?.() || notification?.isSkippedMoment?.()) {
             signingInRef.current = false;
             setIsSigningIn(false);
-            setLoginError('Google sign-in popup was blocked. Please allow popups and try again.');
+            setLoginError('Sign-in popup was blocked. Please enable popups or try again.');
           }
         });
       } catch {
         signingInRef.current = false;
         setIsSigningIn(false);
-        setLoginError('Google sign-in is not available. Please try refreshing the page.');
+        setLoginError('Google services unavailable. Please refresh.');
       }
     }
 
-    // Safety timeout
     setTimeout(() => {
       signingInRef.current = false;
       setIsSigningIn(false);
-    }, 15000);
+    }, 12000);
   }, []);
 
   const handleSaveGcpClientId = (e: React.FormEvent) => {
@@ -238,152 +181,90 @@ export const LoginScreen: React.FC = () => {
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
       
-      {/* Floating golden particles */}
-      <div className="fixed inset-0 pointer-events-none z-[1] overflow-hidden">
+      {/* Floating golden festive particles (pure hardware CSS keyframes for 100% reliability) */}
+      <div className="fixed inset-0 pointer-events-none z-[1] overflow-hidden select-none">
         {PARTICLES.map((p) => (
-          <motion.div
+          <div
             key={p.id}
-            className="absolute rounded-full"
+            className="absolute rounded-full animate-float-ember transform-gpu"
             style={{
-              width: p.size,
-              height: p.size,
-              left: `${p.x}%`,
-              bottom: '-5%',
-              background: 'radial-gradient(circle, rgba(212, 175, 55, 0.9), rgba(212, 175, 55, 0.3))',
-              boxShadow: `0 0 ${p.size * 3}px ${p.size}px rgba(212, 175, 55, 0.25)`,
-            }}
-            animate={{
-              y: [0, -window.innerHeight * 1.2],
-              x: [0, p.drift],
-              opacity: [0, p.opacity, p.opacity, 0],
-              scale: [0.5, 1, 1, 0.3],
-            }}
-            transition={{
-              duration: p.duration,
-              delay: p.delay,
-              repeat: Infinity,
-              ease: 'linear',
+              width: `${p.size}px`,
+              height: `${p.size}px`,
+              left: `${p.left}%`,
+              bottom: '5%',
+              background: '#fde047',
+              boxShadow: '0 0 10px 2px rgba(234, 179, 8, 0.7)',
+              animationDuration: `${p.duration}s`,
+              animationDelay: `${p.delay}s`,
             }}
           />
         ))}
       </div>
 
-      {/* Main login card */}
+      {/* Main Login Card with smooth entrance */}
       <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
+        initial={{ opacity: 0, y: 20, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
         className="relative w-full max-w-sm z-10"
       >
-        {/* Outer glow ring */}
-        <motion.div
-          className="absolute -inset-[2px] rounded-[26px] opacity-60"
+        {/* Glowing border ring */}
+        <div 
+          className="absolute -inset-[2px] rounded-[26px] opacity-70 pointer-events-none animate-pulse-slow"
           style={{
-            background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.3), transparent 40%, transparent 60%, rgba(139, 30, 42, 0.3))',
+            background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.4), transparent 40%, transparent 60%, rgba(139, 30, 42, 0.4))',
           }}
-          animate={{
-            opacity: [0.3, 0.6, 0.3],
-          }}
-          transition={{ duration: 4, ease: 'easeInOut', repeat: Infinity }}
         />
 
-        {/* Card body */}
+        {/* Card glass panel */}
         <div className="relative rounded-3xl p-7 sm:p-9 glass-panel border border-white/15 shadow-2xl overflow-hidden text-center bg-[#0b0d13]/90 backdrop-blur-xl">
           
-          {/* Top shimmer line */}
-          <div className="absolute top-0 inset-x-0 h-[1px] overflow-hidden">
-            <div className="h-full w-full bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-            <motion.div
-              className="absolute inset-y-0 w-[40%]"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.6), transparent)',
-              }}
-              variants={shimmerVariants}
-              initial="initial"
-              animate="animate"
+          {/* Top specular shimmer line */}
+          <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+
+          {/* Ambient festive glows */}
+          <div className="absolute -top-20 -right-20 w-48 h-48 bg-[#d4af37]/20 rounded-full blur-3xl pointer-events-none animate-pulse-slow" />
+          <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-[#8b1e2a]/20 rounded-full blur-3xl pointer-events-none animate-pulse-slow" style={{ animationDelay: '2s' }} />
+
+          {/* Brand Logo with float animation */}
+          <motion.div
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 4, ease: 'easeInOut', repeat: Infinity }}
+            className="mx-auto mb-5 w-24 h-24 rounded-3xl overflow-hidden border border-[#d4af37]/50 bg-black/60 p-2 flex items-center justify-center shadow-[0_0_25px_rgba(212,175,55,0.35)]"
+          >
+            <img 
+              src="/sharodshav_logo.png" 
+              alt="Sharodshav Logo" 
+              className="w-full h-full object-contain object-center"
             />
-          </div>
-
-          {/* Ambient glows */}
-          <motion.div
-            className="absolute -top-20 -right-20 w-48 h-48 bg-[#d4af37]/15 rounded-full blur-3xl pointer-events-none"
-            animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.15, 0.25, 0.15],
-            }}
-            transition={{ duration: 5, ease: 'easeInOut', repeat: Infinity }}
-          />
-          <motion.div
-            className="absolute -bottom-20 -left-20 w-48 h-48 bg-[#8b1e2a]/15 rounded-full blur-3xl pointer-events-none"
-            animate={{
-              scale: [1, 1.15, 1],
-              opacity: [0.12, 0.22, 0.12],
-            }}
-            transition={{ duration: 6, ease: 'easeInOut', repeat: Infinity, delay: 2 }}
-          />
-
-          {/* Logo */}
-          <motion.div variants={logoVariants} {...floatAnimation}>
-            <motion.div
-              className="mx-auto mb-5 w-24 h-24 rounded-3xl overflow-hidden border border-[#d4af37]/50 bg-black/60 p-2 flex items-center justify-center"
-              {...pulseGlow}
-            >
-              <img 
-                src="/sharodshav_logo.png" 
-                alt="Sharodshav Logo" 
-                className="w-full h-full object-contain object-center"
-              />
-            </motion.div>
           </motion.div>
 
-          {/* Title */}
-          <motion.div variants={itemVariants}>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-wider font-sans relative inline-block">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f4e5a9] via-[#d4af37] to-[#e6ca65] text-glow">
-                SHARODSHAV
-              </span>
-              <motion.span
-                className="absolute -top-2 -right-5 text-[#d4af37]"
-                animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.2, 1] }}
-                transition={{ duration: 3, ease: 'easeInOut', repeat: Infinity }}
-              >
-                <Sparkles size={14} />
-              </motion.span>
-            </h1>
-          </motion.div>
+          {/* Title with subtle sparkle */}
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-wider font-sans relative inline-block">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f4e5a9] via-[#d4af37] to-[#e6ca65] text-glow">
+              SHARODSHAV
+            </span>
+            <span className="absolute -top-2 -right-5 text-[#d4af37]">
+              <Sparkles size={14} className="animate-spin" style={{ animationDuration: '8s' }} />
+            </span>
+          </h1>
 
           {/* Subtitle */}
-          <motion.p
-            variants={itemVariants}
-            className="mt-1.5 text-xs sm:text-sm text-white/60 font-medium tracking-tight"
-          >
+          <p className="mt-1.5 text-xs sm:text-sm text-white/70 font-medium tracking-tight">
             Optimal Pandal Navigation • Pujo Planner
-          </motion.p>
+          </p>
 
-          {/* Animated divider */}
-          <motion.div
-            variants={itemVariants}
-            className="my-6 relative h-[1px] w-full overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-            <motion.div
-              className="absolute inset-y-0 w-16"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.5), transparent)',
-              }}
-              animate={{ x: ['-64px', 'calc(100% + 64px)'] }}
-              transition={{ duration: 3, ease: 'easeInOut', repeat: Infinity, repeatDelay: 2 }}
-            />
-          </motion.div>
+          {/* Divider */}
+          <div className="my-6 relative h-[1px] w-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
           {/* Error message */}
           <AnimatePresence>
             {loginError && (
               <motion.div
-                initial={{ opacity: 0, y: -8, height: 0 }}
+                initial={{ opacity: 0, y: -6, height: 0 }}
                 animate={{ opacity: 1, y: 0, height: 'auto' }}
-                exit={{ opacity: 0, y: -8, height: 0 }}
-                className="mb-4 px-3 py-2 rounded-xl bg-red-500/15 border border-red-500/30 text-[11px] text-red-200 flex items-start gap-2 text-left overflow-hidden"
+                exit={{ opacity: 0, y: -6, height: 0 }}
+                className="mb-4 px-3 py-2 rounded-xl bg-red-500/15 border border-red-500/30 text-[11px] text-red-200 flex items-start gap-2 text-left"
               >
                 <AlertCircle size={14} className="text-red-400 shrink-0 mt-0.5" />
                 <span>{loginError}</span>
@@ -392,7 +273,7 @@ export const LoginScreen: React.FC = () => {
           </AnimatePresence>
 
           {/* Google Sign-In Button */}
-          <motion.div variants={itemVariants}>
+          <div className="flex justify-center items-center my-3">
             {/* Hidden real Google button container */}
             <div 
               ref={googleButtonContainerRef}
@@ -400,110 +281,44 @@ export const LoginScreen: React.FC = () => {
               aria-hidden="true"
             />
 
-            {/* Our custom button */}
+            {/* Premium styled clickable button */}
             <motion.button
+              type="button"
               onClick={handleGoogleSignIn}
-              disabled={isSigningIn || !isGisReady}
-              onHoverStart={() => setButtonHovered(true)}
-              onHoverEnd={() => setButtonHovered(false)}
-              className="relative w-full max-w-[300px] mx-auto h-[50px] rounded-full overflow-hidden cursor-pointer disabled:cursor-wait group"
+              disabled={isSigningIn}
               whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              whileTap={{ scale: 0.98 }}
+              className="relative w-full max-w-[290px] h-[48px] rounded-full overflow-hidden cursor-pointer shadow-lg group bg-white text-gray-800 flex items-center justify-center font-medium text-sm select-none border border-white/30 hover:border-[#d4af37] transition-colors"
             >
-              {/* Button background */}
-              <motion.div
-                className="absolute inset-0 rounded-full"
-                style={{
-                  background: 'linear-gradient(135deg, #ffffff, #f8f8f8)',
-                }}
-                animate={{
-                  boxShadow: buttonHovered
-                    ? '0 8px 32px rgba(212, 175, 55, 0.25), 0 0 0 2px rgba(212, 175, 55, 0.4)'
-                    : '0 4px 16px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.15)',
-                }}
-                transition={{ duration: 0.3 }}
-              />
-
-              {/* Shimmer sweep on hover */}
-              <motion.div className="absolute inset-0 rounded-full overflow-hidden">
-                <motion.div
-                  className="absolute inset-y-0 w-[60%]"
-                  style={{
-                    background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.12), transparent)',
-                  }}
-                  animate={buttonHovered ? { x: ['-60%', '160%'] } : {}}
-                  transition={{ duration: 0.8, ease: 'easeInOut' }}
-                />
-              </motion.div>
-
               {/* Button content */}
-              <div className="relative z-10 flex items-center justify-center gap-3 h-full px-6">
+              <div className="flex items-center gap-3 px-5 pointer-events-none">
                 {isSigningIn ? (
-                  <motion.div
-                    className="flex items-center gap-2"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <motion.div
-                      className="w-5 h-5 border-2 border-gray-300 border-t-[#d4af37] rounded-full"
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-                    />
-                    <span className="text-sm font-medium text-gray-600">Signing in...</span>
-                  </motion.div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full border-2 border-gray-400 border-t-[#d4af37] animate-spin" />
+                    <span className="text-xs text-gray-700 font-semibold">Signing in...</span>
+                  </div>
                 ) : !isGisReady ? (
-                  <motion.div
-                    className="flex items-center gap-2"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <motion.div
-                      className="w-5 h-5 border-2 border-gray-200 border-t-[#4285F4] rounded-full"
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    />
-                    <span className="text-sm font-medium text-gray-400">Loading...</span>
-                  </motion.div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full border-2 border-gray-300 border-t-[#4285F4] animate-spin" />
+                    <span className="text-xs text-gray-500">Connecting Google...</span>
+                  </div>
                 ) : (
                   <>
-                    <motion.div
-                      className="w-7 h-7 rounded-full flex items-center justify-center bg-white shadow-sm border border-black/5 shrink-0 p-[5px]"
-                      animate={buttonHovered ? { rotate: [0, -5, 5, 0] } : {}}
-                      transition={{ duration: 0.5 }}
-                    >
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center bg-white shadow-sm shrink-0">
                       <GoogleLogo />
-                    </motion.div>
-                    <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors tracking-tight">
+                    </div>
+                    <span className="tracking-tight font-semibold text-gray-700 group-hover:text-black transition-colors">
                       Sign in with Google
                     </span>
                   </>
                 )}
               </div>
             </motion.button>
-          </motion.div>
+          </div>
 
-          {/* "secure" divider */}
-          <motion.div
-            variants={itemVariants}
-            className="flex items-center gap-3 my-4"
-          >
-            <div className="flex-1 h-[1px] bg-gradient-to-r from-transparent to-white/10" />
-            <span className="text-[10px] text-white/30 font-mono uppercase tracking-widest">secure</span>
-            <div className="flex-1 h-[1px] bg-gradient-to-l from-transparent to-white/10" />
-          </motion.div>
-
-          {/* Location status */}
-          <motion.div
-            variants={itemVariants}
-            className="flex items-center justify-center space-x-1.5 text-xs text-white/50"
-          >
-            <motion.div
-              animate={permissionState !== 'granted' ? { scale: [1, 1.2, 1] } : {}}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              <MapPin size={12} className={permissionState === 'granted' ? 'text-emerald-400' : 'text-[#d4af37]'} />
-            </motion.div>
+          {/* Location badge */}
+          <div className="mt-5 flex items-center justify-center space-x-1.5 text-xs text-white/50">
+            <MapPin size={12} className={permissionState === 'granted' ? 'text-emerald-400' : 'text-[#d4af37]'} />
             <span className="truncate max-w-[200px]">
               {permissionState === 'granted'
                 ? `${locality || 'Location active'}`
@@ -512,50 +327,34 @@ export const LoginScreen: React.FC = () => {
                   : 'Detecting location...'}
             </span>
             {permissionState !== 'granted' && (
-              <motion.button
+              <button
+                type="button"
                 onClick={requestLocation}
                 className="text-[#f4e5a9] underline ml-1 hover:text-white text-[11px] cursor-pointer"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
               >
                 Enable
-              </motion.button>
+              </button>
             )}
-          </motion.div>
+          </div>
 
-          {/* Footer */}
-          <motion.div
-            variants={itemVariants}
-            className="mt-4 text-[10px] text-white/25 tracking-wider font-mono"
-          >
-            made by - <span className="text-[#d4af37]/50">soutrik_2006</span>
-          </motion.div>
+          {/* Footer attribution */}
+          <div className="mt-4 text-[10px] text-white/30 tracking-wider font-mono">
+            made by - <span className="text-[#d4af37]/60">soutrik_2006</span>
+          </div>
+
         </div>
       </motion.div>
 
-      {/* GCP Config Modal */}
+      {/* GCP OAuth Client ID Configuration Modal */}
       <AnimatePresence>
         {showGcpConfigModal && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md">
             <motion.div
-              className="absolute inset-0 bg-black/80 backdrop-blur-md"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowGcpConfigModal(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-md rounded-3xl glass-panel border border-white/20 p-6 shadow-2xl bg-[#0b0d13]/95 text-left z-10"
+              className="relative w-full max-w-md rounded-3xl glass-panel border border-white/20 p-6 shadow-2xl bg-[#0b0d13]/95 text-left"
             >
               <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <div className="flex items-center gap-2">
@@ -564,14 +363,13 @@ export const LoginScreen: React.FC = () => {
                   </div>
                   <h3 className="text-base font-bold text-white">Google Cloud (GCP) OAuth</h3>
                 </div>
-                <motion.button
+                <button
+                  type="button"
                   onClick={() => setShowGcpConfigModal(false)}
                   className="p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white cursor-pointer"
-                  whileHover={{ rotate: 90 }}
-                  transition={{ duration: 0.2 }}
                 >
                   <X size={16} />
-                </motion.button>
+                </button>
               </div>
 
               <form onSubmit={handleSaveGcpClientId} className="mt-4 space-y-4">
@@ -584,14 +382,13 @@ export const LoginScreen: React.FC = () => {
                     value={clientIdInput}
                     onChange={(e) => setClientIdInput(e.target.value)}
                     placeholder="xxxxxxxxxxxx.apps.googleusercontent.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/15 focus:border-[#d4af37] focus:outline-none text-white text-xs font-mono placeholder:text-white/30 transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/15 focus:border-[#d4af37] focus:outline-none text-white text-xs font-mono placeholder:text-white/30"
                   />
                   <p className="text-[10px] text-white/40">
                     Saved directly in your browser's local storage and environment.
                   </p>
                 </div>
 
-                {/* Quick GCP Setup Guide */}
                 <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10 space-y-1.5 text-xs text-white/70">
                   <div className="flex items-center gap-1.5 font-semibold text-white text-[11px]">
                     <HelpCircle size={13} className="text-[#d4af37]" />
@@ -601,26 +398,22 @@ export const LoginScreen: React.FC = () => {
                     <li>Open <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="text-[#d4af37] underline inline-flex items-center gap-0.5">Google Cloud Console <ExternalLink size={10} /></a></li>
                     <li>Click <strong>Create Credentials &rarr; OAuth client ID</strong></li>
                     <li>Select <strong>Web application</strong></li>
-                    <li>Under <strong>Authorized JavaScript origins</strong>, add: <code className="bg-black/40 px-1 rounded text-emerald-300 font-mono text-[10px]">http://localhost:5173</code></li>
+                    <li>Under <strong>Authorized JavaScript origins</strong>, add your site origin</li>
                     <li>Copy your <strong>Client ID</strong> and paste it above!</li>
                   </ol>
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
-                  <motion.button
+                  <button
                     type="button"
                     onClick={() => setShowGcpConfigModal(false)}
                     className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-medium cursor-pointer"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
                   >
                     Cancel
-                  </motion.button>
-                  <motion.button
+                  </button>
+                  <button
                     type="submit"
                     className="px-5 py-2 rounded-xl bg-[#d4af37] hover:bg-[#e6ca65] text-black text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
                   >
                     {savedSuccess ? (
                       <>
@@ -630,11 +423,11 @@ export const LoginScreen: React.FC = () => {
                     ) : (
                       <span>Save Client ID</span>
                     )}
-                  </motion.button>
+                  </button>
                 </div>
               </form>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
