@@ -42,7 +42,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   return (
-    <header className="fixed top-0 inset-x-0 z-40 px-2.5 sm:px-6 py-2 sm:py-3 bg-[#080a10]/95 sm:bg-black/60 backdrop-blur-xl border-b border-white/15 shadow-2xl transition-all duration-300">
+    <header className="fixed top-0 inset-x-0 z-40 px-2.5 sm:px-6 py-2 sm:py-3 bg-[#0a0c14]/98 sm:bg-black/70 backdrop-blur-2xl border-b border-[#d4af37]/25 shadow-2xl transition-all duration-300">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-1.5 sm:gap-3">
         
         {/* Left: Brand Logo & Title */}
@@ -54,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <motion.div 
             whileHover={{ scale: 1.06 }}
             whileTap={{ scale: 0.95 }}
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden border border-[#d4af37]/50 bg-black/80 flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.3)] group-hover:border-[#d4af37] transition-all p-0.5 shrink-0"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden border border-[#d4af37]/60 bg-black/80 flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.3)] group-hover:border-[#d4af37] transition-all p-0.5 shrink-0"
           >
             <img 
               src="/sharodshav_logo.png" 
@@ -85,19 +85,19 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Right: Actions */}
         <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
           
-          {/* Home Button (Icon on mobile, labeled on desktop) */}
+          {/* Home Button (Desktop / Tablet) */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onGoHome}
             title="Go to Home Dashboard"
-            className="p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-[#d4af37]/50 text-white transition-all flex items-center gap-1 text-xs cursor-pointer"
+            className="hidden sm:flex px-3 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-[#d4af37]/50 text-white transition-all items-center gap-1 text-xs cursor-pointer"
           >
             <Home size={14} className="text-[#d4af37]" />
-            <span className="hidden sm:inline text-[11px] font-medium">Home</span>
+            <span className="text-[11px] font-medium">Home</span>
           </motion.button>
 
-          {/* Location status pill */}
+          {/* Location status badge */}
           <motion.button
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
@@ -118,7 +118,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <MapPin size={13} className={permissionState === 'granted' ? 'text-emerald-400 shrink-0' : 'text-[#d4af37] shrink-0'} />
-            <span className="text-[10px] sm:text-[11px] font-medium max-w-[70px] sm:max-w-[120px] truncate">
+            <span className="text-[10px] sm:text-[11px] font-medium max-w-[65px] sm:max-w-[120px] truncate">
               {permissionState === 'granted' 
                 ? (locality ? locality.split(',')[0] : 'Kolkata')
                 : permissionState === 'denied' 
@@ -132,17 +132,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </motion.button>
 
-          {/* Simulator pill */}
-          <div className="relative">
+          {/* Festival Date Simulator (Hidden on small mobile to avoid crowding) */}
+          <div className="relative hidden sm:block">
             <motion.button
               whileHover={{ scale: 1.06 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowSimMenu(!showSimMenu)}
               title="Test Festival Dates"
-              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 hover:border-white/30 transition-all flex items-center gap-1 text-xs text-white/80 hover:text-white cursor-pointer"
+              className="px-2.5 py-1.5 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 hover:border-white/30 transition-all flex items-center gap-1 text-xs text-white/80 hover:text-white cursor-pointer"
             >
               <SlidersHorizontal size={14} className="text-[#d4af37]" />
-              <span className="hidden md:inline text-[11px] font-medium">Dates</span>
+              <span className="text-[11px] font-medium">Dates</span>
             </motion.button>
 
             {showSimMenu && (
@@ -195,13 +195,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span>Vijaya Dashami</span>
                   {simulatedDate === '2026-10-22' && <span className="text-[10px]">●</span>}
                 </button>
-                <button
-                  onClick={() => onSelectSimulatedDate('2026-10-25')}
-                  className={`w-full text-left px-3 py-1.5 rounded-lg transition-colors flex items-center justify-between ${simulatedDate === '2026-10-25' ? 'bg-[#d4af37]/20 text-[#f4e5a9] font-medium' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
-                >
-                  <span>Post-Pujo</span>
-                  {simulatedDate === '2026-10-25' && <span className="text-[10px]">●</span>}
-                </button>
               </div>
             )}
           </div>
@@ -224,7 +217,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </motion.button>
           )}
 
-          {/* Info Icon */}
+          {/* Sharodshav Info ("i") modal */}
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.94 }}
