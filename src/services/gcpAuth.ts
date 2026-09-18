@@ -58,12 +58,16 @@ export interface GoogleCredentialResponse {
 const LOCAL_STORAGE_USER_KEY = 'pujo_planner_auth_user';
 const GCP_CLIENT_ID_STORAGE_KEY = 'pujo_planner_gcp_client_id';
 
-const DEFAULT_GCP_CLIENT_ID = '123857226981-vhh84h5okpt21t6r14nj75b4pb3d0ln0.apps.googleusercontent.com';
+const DEFAULT_GCP_CLIENT_ID = '182020068422-goppf8020lipop8qnespmvqdpuc6p7m1.apps.googleusercontent.com';
 
 // Default / Env GCP Client ID
 export function getGcpClientId(): string {
   const custom = localStorage.getItem(GCP_CLIENT_ID_STORAGE_KEY);
-  if (custom && custom.trim()) return custom.trim();
+  if (custom && (custom.includes('123857226981') || !custom.includes('.apps.googleusercontent.com'))) {
+    localStorage.removeItem(GCP_CLIENT_ID_STORAGE_KEY);
+  } else if (custom && custom.trim()) {
+    return custom.trim();
+  }
   const envVal = (import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim();
   return envVal || DEFAULT_GCP_CLIENT_ID;
 }
