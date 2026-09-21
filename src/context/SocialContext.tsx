@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   type FriendProfile,
   type FriendRequest,
@@ -8,75 +8,46 @@ import { useAuth } from './AuthContext';
 import { useLocation } from './LocationContext';
 import { 
   syncUserProfile, 
-  subscribeToActiveUsers, 
+  subscribeToAllUsers, 
   subscribeToFriendRequests, 
   sendFriendRequestToDb, 
-  updateFriendRequestStatusInDb, 
+  acceptFriendRequestInDb,
+  declineFriendRequestInDb,
+  deleteFriendInDb,
   sendChatMessageToDb, 
   subscribeToChatMessages,
-  getDeterministicChatId 
+  getDeterministicChatId,
+  type UserProfile
 } from '../services/firebaseBackend';
 
 interface SocialContextType {
+  allUsers: FriendProfile[];
   friends: FriendProfile[];
   requests: FriendRequest[];
   chats: Record<string, ChatMessage[]>;
   pendingReceivedCount: number;
   updateUserRoute: (activeRoute: string[], currentPandal?: string, zone?: 'north' | 'central' | 'south') => void;
-  sendJoinRequest: (friend: FriendProfile, customMessage: string) => void;
-  acceptRequest: (requestId: string) => void;
+  sendJoinRequest: (friend: FriendProfile, customMessage?: string) => void;
+  acceptRequest: (requestId: string, friendId?: string) => void;
   declineRequest: (requestId: string) => void;
+  deleteFriend: (friendId: string) => void;
   sendMessage: (friendId: string, text: string) => void;
   shareRouteWithFriend: (friendId: string, pandals: string[]) => void;
+  addSimulatedDevotee: (name: string, pandal: string, zone?: 'north' | 'central' | 'south') => void;
 }
 
 const SocialContext = createContext<SocialContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY_REQUESTS = 'pujo_planner_requests';
-const LOCAL_STORAGE_KEY_CHATS = 'pujo_planner_chats';
 
 export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const { locality, coordinates } = useLocation();
 
-  const [friends, setFriends] = useState<FriendProfile[]>([]);
-  
-  const DEMO_IDS = ['req-1', 'req-2', 'friend-1', 'friend-2', 'friend-3', 'friend-4', 'friend-5'];
+  const [allUsers, setAllUsers] = useState<FriendProfile[]>([]);
+  const [requests, setRequests] = useState<FriendRequest[]>([]);
+  const [chats, setChats] = useState<Record<string, ChatMessage[]>>({});
 
-  const [requests, setRequests] = useState<FriendRequest[]>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY_REQUESTS);
-      if (saved) {
-        const parsed: FriendRequest[] = JSON.parse(saved);
-        return parsed.filter(r => !DEMO_IDS.includes(r.id));
-      }
-      return [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [chats, setChats] = useState<Record<string, ChatMessage[]>>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY_CHATS);
-      if (saved) {
-        const parsed: Record<string, ChatMessage[]> = JSON.parse(saved);
-        // Strip out any legacy demo keys and messages
-        const clean: Record<string, ChatMessage[]> = {};
-        for (const [k, v] of Object.entries(parsed)) {
-          if (DEMO_IDS.includes(k)) continue; // Skip demo friend chat threads
-          const valid = v.filter(m => !m.id.startsWith('msg-1') && !m.id.startsWith('msg-2') && !m.id.startsWith('msg-3'));
-          if (valid.length > 0) clean[k] = valid;
-        }
-        return clean;
-      }
-      return {};
-    } catch {
-      return {};
-    }
-  });
-
-  // 1. Sync User Profile in Database upon login or location change
+  // 1. Sync Current Google User Profile to Firebase Backend
   useEffect(() => {
     if (user) {
       syncUserProfile(user, {
@@ -86,47 +57,61 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [user, locality, coordinates]);
 
-  // 2. Real-time Subscription to Active Friends in Database
+  // 2. Real-time Subscription to ALL registered devotees in the database
   useEffect(() => {
     if (!user?.uid) return;
-    const unsub = subscribeToActiveUsers(user.uid, (activeUsers) => {
-      // Only show real registered users from the database — no demo data
-      setFriends(activeUsers);
+    const unsub = subscribeToAllUsers(user.uid, (users) => {
+      setAllUsers(users);
     });
     return () => unsub();
   }, [user]);
 
-  // 3. Real-time Subscription to Friend Requests in Database
+  // 3. Real-time Subscription to Friend Requests for this user
   useEffect(() => {
-    if (user?.uid) {
-      const unsub = subscribeToFriendRequests(user.uid, (dbRequests) => {
-        if (dbRequests) {
-          setRequests(prev => {
-            const map = new Map<string, FriendRequest>();
-            prev.forEach(r => map.set(r.id, r));
-            dbRequests.forEach(r => map.set(r.id, r));
-            return Array.from(map.values());
-          });
-        }
-      });
-      return () => unsub();
-    }
+    if (!user?.uid) return;
+    const unsub = subscribeToFriendRequests(user.uid, (dbRequests) => {
+      setRequests(dbRequests);
+    });
+    return () => unsub();
   }, [user]);
 
-  // Persist to local storage
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY_REQUESTS, JSON.stringify(requests));
-    } catch { /* ignore */ }
-  }, [requests]);
+  // Compute accepted Friends:
+  // A user is a confirmed friend if:
+  // 1) There is an accepted request between user and friend, OR
+  // 2) The current user's profile lists them in 'friends'
+  const friends = useMemo(() => {
+    if (!user?.uid) return [];
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY_CHATS, JSON.stringify(chats));
-    } catch { /* ignore */ }
-  }, [chats]);
+    // Find all friend user IDs from accepted requests
+    const acceptedUserIds = new Set<string>();
+    
+    requests.forEach(r => {
+      if (r.status === 'accepted') {
+        const fromId = (r as any).fromUserId;
+        const toId = (r as any).toUserId;
+        if (fromId === user.uid && toId) acceptedUserIds.add(toId);
+        if (toId === user.uid && fromId) acceptedUserIds.add(fromId);
+        // Also match by senderName if IDs not present
+        const matched = allUsers.find(u => u.name.toLowerCase() === r.senderName.toLowerCase());
+        if (matched) acceptedUserIds.add(matched.id);
+      }
+    });
 
-  // 4. Real-time Chat Subscription for each friend
+    // Check local storage user doc for explicit friends array
+    try {
+      const uRaw = localStorage.getItem('pujo_db_users');
+      if (uRaw) {
+        const uMap: Record<string, UserProfile> = JSON.parse(uRaw);
+        if (uMap[user.uid]?.friends) {
+          uMap[user.uid].friends?.forEach(fId => acceptedUserIds.add(fId));
+        }
+      }
+    } catch { /* ignore */ }
+
+    return allUsers.filter(u => acceptedUserIds.has(u.id));
+  }, [user, requests, allUsers]);
+
+  // 4. Real-time Chat Subscription for all confirmed friends
   useEffect(() => {
     if (!user?.uid || friends.length === 0) return;
     const unsubs: (() => void)[] = [];
@@ -148,9 +133,11 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => unsubs.forEach(u => u());
   }, [user, friends]);
 
-  const pendingReceivedCount = requests.filter(r => r.type === 'received' && r.status === 'pending').length;
+  const pendingReceivedCount = useMemo(() => {
+    return requests.filter(r => r.type === 'received' && r.status === 'pending').length;
+  }, [requests]);
 
-  // 0. Real-time Route & Location broadcast to database
+  // Update Route Broadcast
   const updateUserRoute = useCallback((activeRoute: string[], currentPandal?: string, zone?: 'north' | 'central' | 'south') => {
     if (user) {
       syncUserProfile(user, {
@@ -163,151 +150,82 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [user, locality, coordinates]);
 
-  // 1. Send Join Request to a Friend (Linked to Real Database)
-  const sendJoinRequest = useCallback((friend: FriendProfile, customMessage: string) => {
-    if (user) {
-      sendFriendRequestToDb(user, friend, customMessage, friend.sector, friend.currentPandal);
-    }
-
-    const newReq: FriendRequest = {
-      id: `sent-req-${Date.now()}`,
-      senderName: friend.name,
-      senderAvatar: friend.avatar,
-      zone: friend.sector || `${friend.zone} Kolkata`,
-      currentPandal: friend.currentPandal,
-      message: customMessage || `Hey ${friend.name.split(' ')[0]}! Let's join routes for pandal hopping together!`,
-      timestamp: 'Just now',
-      status: 'pending',
-      type: 'sent'
-    };
-
-    setRequests(prev => [newReq, ...prev.filter(r => r.id !== newReq.id)]);
-
-    // Also create initial pending chat greeting
-    const welcomeMsg: ChatMessage = {
-      id: `msg-sys-${Date.now()}`,
-      friendId: friend.id,
-      sender: 'me',
-      text: `👋 Sent a Join Request: "${newReq.message}"`,
-      timestamp: 'Just now'
-    };
-
-    setChats(prev => ({
-      ...prev,
-      [friend.id]: [...(prev[friend.id] || []), welcomeMsg]
-    }));
+  // 1. Send Friend Request (Linked to Real Database)
+  const sendJoinRequest = useCallback((friend: FriendProfile, customMessage?: string) => {
+    if (!user) return;
+    sendFriendRequestToDb(user, friend, customMessage, friend.sector, friend.currentPandal);
   }, [user]);
 
-  // 2. Accept a Request (Sync to Database)
-  const acceptRequest = useCallback((requestId: string) => {
-    updateFriendRequestStatusInDb(requestId, 'accepted');
+  // 2. Accept Friend Request (Tick Button clicked)
+  const acceptRequest = useCallback((requestId: string, friendId?: string) => {
+    if (!user) return;
+    const req = requests.find(r => r.id === requestId);
+    const targetFriendId = friendId || (req as any)?.fromUserId || allUsers.find(u => u.name === req?.senderName)?.id;
+    
+    if (targetFriendId) {
+      acceptFriendRequestInDb(requestId, user.uid, targetFriendId);
+    }
+  }, [user, requests, allUsers]);
 
-    setRequests(prev => prev.map(req => {
-      if (req.id === requestId) {
-        // Create initial chat with sender
-        const matchedFriend = friends.find(f => f.name.toLowerCase() === req.senderName.toLowerCase()) || {
-          id: `friend-${Date.now()}`,
-          name: req.senderName,
-          avatar: req.senderAvatar,
-          zone: 'north' as const,
-          sector: req.zone,
-          currentPandal: req.currentPandal,
-          routeTitle: 'Pujo Squad',
-          pandalCount: 4,
-          status: 'at-pandal' as const,
-          lastSeen: 'Online',
-          mutualFriends: 5
-        };
-
-        if (!friends.some(f => f.name === req.senderName)) {
-          setFriends(fPrev => [matchedFriend, ...fPrev]);
-        }
-
-        const friendId = matchedFriend.id;
-        const acceptMsg: ChatMessage = {
-          id: `msg-${Date.now()}`,
-          friendId,
-          sender: 'friend',
-          text: `🎉 Shubho Pujo! Thanks for accepting! Where are you hopping right now?`,
-          timestamp: 'Just now'
-        };
-
-        setChats(cPrev => ({
-          ...cPrev,
-          [friendId]: [...(cPrev[friendId] || []), acceptMsg]
-        }));
-
-        return { ...req, status: 'accepted' };
-      }
-      return req;
-    }));
-  }, [friends]);
-
-  // 3. Decline Request (Sync to Database)
+  // 3. Decline Friend Request (Cross Button clicked)
   const declineRequest = useCallback((requestId: string) => {
-    updateFriendRequestStatusInDb(requestId, 'declined');
-    setRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: 'declined' } : req));
+    declineFriendRequestInDb(requestId);
   }, []);
 
-  // 4. Send Message (Sync directly to Database)
-  const sendMessage = useCallback((friendId: string, text: string) => {
-    if (!text.trim()) return;
-
-    const chatId = user?.uid ? getDeterministicChatId(user.uid, friendId) : friendId;
-    if (user) {
-      sendChatMessageToDb(chatId, friendId, user.uid, text.trim());
-    }
-
-    const newMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      friendId,
-      sender: 'me',
-      text: text.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setChats(prev => ({
-      ...prev,
-      [friendId]: [...(prev[friendId] || []), newMsg],
-      [chatId]: [...(prev[chatId] || []), newMsg]
-    }));
+  // 4. Delete Friend (Unfriend option)
+  const deleteFriend = useCallback((friendId: string) => {
+    if (!user) return;
+    deleteFriendInDb(user.uid, friendId);
   }, [user]);
 
-  // 5. Share Route Card in Chat (Sync to Database)
+  // 5. Send Direct Message
+  const sendMessage = useCallback((friendId: string, text: string) => {
+    if (!text.trim() || !user) return;
+    const chatId = getDeterministicChatId(user.uid, friendId);
+    sendChatMessageToDb(chatId, friendId, user.uid, text.trim());
+  }, [user]);
+
+  // 6. Share Route Card in Chat
   const shareRouteWithFriend = useCallback((friendId: string, pandals: string[]) => {
+    if (!user) return;
     const routeText = pandals.length > 0
       ? `🗺️ My Sharodshav Puja Route:\n${pandals.map((p, i) => `${i + 1}. ${p}`).join('\n')}\nLet's meet up along the way!`
       : `🗺️ Hey! Join our Pujo hopping route tonight!`;
 
-    const chatId = user?.uid ? getDeterministicChatId(user.uid, friendId) : friendId;
-    if (user) {
-      sendChatMessageToDb(chatId, friendId, user.uid, routeText, pandals);
-    }
+    const chatId = getDeterministicChatId(user.uid, friendId);
+    sendChatMessageToDb(chatId, friendId, user.uid, routeText, pandals);
+  }, [user]);
 
-    const routeMsg: ChatMessage = {
-      id: `msg-route-${Date.now()}`,
-      friendId,
-      sender: 'me',
-      text: routeText,
-      timestamp: 'Just now',
-      isRouteCard: true,
-      routeData: {
-        title: 'Sharodshav Itinerary',
-        pandals: pandals.slice(0, 5),
-        distanceKm: 8.5
-      }
+  // 7. Seed Simulated Devotee (For immediate testing before multiple physical devices join)
+  const addSimulatedDevotee = useCallback((name: string, pandal: string, zone?: 'north' | 'central' | 'south') => {
+    const simUid = `devotee-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+    const simUser: UserProfile = {
+      uid: simUid,
+      displayName: name,
+      email: `${name.toLowerCase().replace(/\s+/g, '.')}.pujo@gmail.com`,
+      photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${simUid}&backgroundColor=b6e3f4,c0aede,d1d4f9`,
+      zone: zone || 'south',
+      sector: zone === 'north' ? 'Bagbazar / Shyambazar' : zone === 'central' ? 'College Street / Bowbazar' : 'Ballygunge / Gariahat',
+      currentPandal: pandal,
+      locality: 'Kolkata, WB',
+      activeRoute: [pandal, 'Maddox Square', 'Ballygunge Cultural', 'Ekdalia Evergreen'],
+      friends: [],
+      lastSeen: Date.now()
     };
 
-    setChats(prev => ({
-      ...prev,
-      [friendId]: [...(prev[friendId] || []), routeMsg],
-      [chatId]: [...(prev[chatId] || []), routeMsg]
-    }));
-  }, [user]);
+    try {
+      const uRaw = localStorage.getItem('pujo_db_users');
+      const uMap: Record<string, UserProfile> = uRaw ? JSON.parse(uRaw) : {};
+      uMap[simUid] = simUser;
+      localStorage.setItem('pujo_db_users', JSON.stringify(uMap));
+      window.dispatchEvent(new Event('pujo_users_updated'));
+    } catch { /* ignore */ }
+  }, []);
 
   return (
     <SocialContext.Provider
       value={{
+        allUsers,
         friends,
         requests,
         chats,
@@ -316,8 +234,10 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         sendJoinRequest,
         acceptRequest,
         declineRequest,
+        deleteFriend,
         sendMessage,
-        shareRouteWithFriend
+        shareRouteWithFriend,
+        addSimulatedDevotee
       }}
     >
       {children}
