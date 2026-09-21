@@ -120,6 +120,26 @@ const DashboardContent: React.FC = () => {
     setIsPlanTripOpen(true);
   };
 
+  // App-wide shortcut listeners for Pujo AI and notifications
+  useEffect(() => {
+    const handleOpenMap = () => setIsSitePickerOpen(true);
+    const handleOpenPlan = () => setIsPlanTripOpen(true);
+    const handleOpenFriends = () => setIsSocialHubOpen(true);
+    const handleOpenNearby = () => setIsNearbyModalOpen(true);
+
+    window.addEventListener('pujo_open_map', handleOpenMap);
+    window.addEventListener('pujo_open_plan_trip', handleOpenPlan);
+    window.addEventListener('pujo_open_friends', handleOpenFriends);
+    window.addEventListener('pujo_open_nearby', handleOpenNearby);
+
+    return () => {
+      window.removeEventListener('pujo_open_map', handleOpenMap);
+      window.removeEventListener('pujo_open_plan_trip', handleOpenPlan);
+      window.removeEventListener('pujo_open_friends', handleOpenFriends);
+      window.removeEventListener('pujo_open_nearby', handleOpenNearby);
+    };
+  }, []);
+
   // Calculate status based on simulated or real date
   const effectiveDate = simulatedDate ? new Date(simulatedDate + 'T12:00:00') : new Date();
   const festivalStatus = getFestivalStatus(effectiveDate, DURGA_PUJA_2026);
