@@ -5,7 +5,10 @@ import { KOLKATA_RESTAURANTS_DATA } from '../config/kolkataRestaurants';
 export interface LocationDataContext {
   latitude?: number;
   longitude?: number;
+  accuracy?: number;
   locality?: string;
+  hasRealGps?: boolean;
+  isManualSelection?: boolean;
   activeRoutePandals?: string[];
 }
 
@@ -20,7 +23,6 @@ function getGeminiApiKey(): string {
     return (import.meta as any).env.VITE_GEMINI_API_KEY;
   }
   try {
-    // Encoded fallback for production deployment
     return atob('QVEuQWI4Uk42TDFYdU1kQ0o2RllsTnpfQThON01weXJBYU9CZkNaZVZQYnFLYjl6TUxVdnc=');
   } catch {
     return '';
@@ -28,11 +30,8 @@ function getGeminiApiKey(): string {
 }
 
 const GEMINI_API_KEY = getGeminiApiKey();
-
-// High-speed production models in priority order
 const GEMINI_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'];
 
-// Haversine distance calculator in km
 function haversineDist(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -51,11 +50,13 @@ function haversineDist(lat1: number, lon1: number, lat2: number, lon2: number): 
  * Builds high-density live spatial & cultural grounding knowledge
  */
 function buildGroundingKnowledge(location?: LocationDataContext): string {
+  const hasGps = !!location?.hasRealGps;
+  const isManual = !!location?.isManualSelection;
   const lat = location?.latitude ?? 22.5726;
   const lng = location?.longitude ?? 88.3639;
-  const locStr = location?.locality || `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E (Kolkata)`;
+  const locStr = location?.locality || (hasGps ? `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E` : 'Kolkata (Default Central)');
 
-  // 1. Calculate closest pandals from full Kolkata dataset
+  // 1. Calculate closest pandals from full Kolkata dataset based on the exact lat/lng
   const allPandals: Array<{ name: string; zone: string; sector: string; dist: number; lat: number; lng: number }> = [];
   KOLKATA_SECTORS_DATA.forEach(zone => {
     zone.sectors.forEach(sec => {
@@ -75,15 +76,15 @@ function buildGroundingKnowledge(location?: LocationDataContext): string {
   const topPandals = allPandals.slice(0, 6);
 
   const nearestPandalsSummary = topPandals
-    .map((p, i) => `${i + 1}. ${p.name} (${p.zone.toUpperCase()} - ${p.sector}): ~${p.dist} km away. Google Maps destination: ${encodeURIComponent(p.name + ' Kolkata')}`)
+    .map((p, i) => `${i + 1}. ${p.name} (${p.zone.toUpperCase()} - ${p.sector}): ~${p.dist} km away (Walking: ~${Math.round(p.dist * 13)} mins, Car/Auto: ~${Math.max(3, Math.round(p.dist * 4))} mins). Google Maps destination: ${encodeURIComponent(p.name + ' Kolkata')}`)
     .join('\n');
 
   // 2. Real-time nearest metro stations
   const nearestMetros = findNearestStations(lat, lng, 3, 'metro')
-    .map(r => `${r.station.name} (${r.station.line} - ~${r.distanceKm} km, ~${r.walkingMinutes} min walk)`)
+    .map(r => `${r.station.name} (${r.station.line} - ~${r.distanceKm} km away, ~${r.walkingMinutes} min walk)`)
     .join('; ');
 
-  // 3. Iconic Kolkata restaurants
+  // 3. Iconic Kolkata restaurants near this spot
   const allRestaurants: Array<{ name: string; cuisine: string; area: string; dist: number; signature: string }> = [];
   KOLKATA_RESTAURANTS_DATA.forEach(r => {
     if (r.lat && r.lng) {
@@ -100,23 +101,28 @@ function buildGroundingKnowledge(location?: LocationDataContext): string {
   const topRestaurants = allRestaurants.slice(0, 4);
 
   const nearestFoodSummary = topRestaurants
-    .map(r => `${r.name} (${r.area}, ~${r.dist} km) - Must Try: ${r.signature}`)
+    .map(r => `${r.name} (${r.area}, ~${r.dist} km) - Specialty: ${r.signature}`)
     .join('; ');
 
+  const locationVerificationText = hasGps
+    ? `LIVE USER GPS VERIFIED: YES (Accuracy: ±${Math.round(location?.accuracy || 10)}m)\nCOORDINATES: ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E\nNEIGHBORHOOD: ${locStr}\n(All distances and routes are strictly relative to this verified spot)`
+    : isManual
+    ? `USER SELECTED AREA: ${locStr}\nCOORDINATES: ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E\n(All distances and routes are relative to this selected Kolkata zone)`
+    : `LOCATION STATUS: Browser GPS not shared yet (Defaulting to Central Kolkata: 22.5726°N, 88.3639°E).\n(Kindly advise the user to tap "Share GPS" or select their zone above for exact doorstep accuracy)`;
+
   return [
-    `USER CURRENT GPS COORDINATES: ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`,
-    `USER LOCALITY / ZONE: ${locStr}`,
-    `CLOSEST DURGA PUJA PANDALS FROM CURRENT LOCATION:\n${nearestPandalsSummary}`,
-    `NEAREST KOLKATA METRO STATIONS: ${nearestMetros}`,
+    `=== USER LOCATION TELEMETRY ===\n${locationVerificationText}`,
+    `CLOSEST DURGA PUJA PANDALS FROM THIS LOCATION:\n${nearestPandalsSummary}`,
+    `NEAREST METRO STATIONS: ${nearestMetros}`,
     `ICONIC FOOD & RESTAURANTS NEARBY: ${nearestFoodSummary}`,
     `ACTIVE ROUTE ITINERARY: ${location?.activeRoutePandals?.join(' -> ') || 'None selected yet'}`,
-    `DURGA PUJA 2026 CALENDAR & AUSPICIOUS TIMINGS:`,
+    `DURGA PUJA 2026 CALENDAR & TIMINGS:`,
     `- Mahalaya (Sun, 11 Oct 2026): Dawn Tarpan & Chandi Path by Birendra Krishna Bhadra.`,
     `- Maha Shashti (Sat, 17 Oct 2026): Bodhon, Amontron & Adhibas.`,
     `- Maha Saptami (Sun, 18 Oct 2026): Nabapatrika (Kolabou) Snan at the Ganga Ghats (Bagbazar, Babughat, Ahiritola).`,
-    `- Maha Ashtami (Mon, 19 Oct 2026): Kumari Puja in the morning; Sandhi Puja from 10:48 PM to 11:36 PM (sacred offering of 108 lotuses & 108 pradips).`,
-    `- Maha Navami (Tue, 20 Oct 2026): Grand Dhunuchi Naach with traditional Dhak beats, Maha Aarti & Bhog.`,
-    `- Bijoya Dashami (Wed, 21 Oct 2026): Sindoor Khela in the morning, magnificent Visarjan procession to Hooghly river ghats, and Shubho Bijoya sweet exchanges.`,
+    `- Maha Ashtami (Mon, 19 Oct 2026): Kumari Puja in the morning; Sandhi Puja from 10:48 PM to 11:36 PM (108 lotuses & 108 lamps).`,
+    `- Maha Navami (Tue, 20 Oct 2026): Dhunuchi Naach with Dhak beats, Maha Aarti & Bhog.`,
+    `- Bijoya Dashami (Wed, 21 Oct 2026): Sindoor Khela in the morning, Visarjan procession to Hooghly river ghats, and Shubho Bijoya.`,
     `KOLKATA METRO NIGHT TIMINGS: Both Blue Line (Dakshineswar - Kavi Subhash) and Green Line (Howrah Maidan - Sector V) run special midnight services throughout the night till early morning during Saptami, Ashtami, and Navami.`,
     `SHARODSHAV WEBSITE FEATURES:`,
     `- Interactive 3D Pandal Map: [🗺️ Open Interactive Map](#open-map)`,
@@ -136,12 +142,14 @@ export async function askGeminiPujoAi(
   const groundingContext = buildGroundingKnowledge(location);
   const lat = location?.latitude ?? 22.5726;
   const lng = location?.longitude ?? 88.3639;
+  const locStr = location?.locality || 'Kolkata';
 
   const systemInstruction = [
     'You are SHARODSHAV AI, the authentic, interactive, live Kolkata Durga Puja 2026 and real-time transit & food guide.',
     'VOICE & PERSONALITY:',
-    '- Warm, knowledgeable, festive, and proud of Kolkata culture. Start occasionally with festive Bengali greetings like "নমস্কার!" or "Shubho Sharodiya!".',
-    '- Provide accurate, live, grounded information based on the user location and grounding data.',
+    '- Warm, knowledgeable, festive, and proud of Kolkata culture. Begin with festive Bengali greetings like "নমস্কার!" or "Shubho Sharodiya!".',
+    '- CRITICAL: When the user asks about nearby pandals, explicitly mention their detected locality (e.g. "From your location in ' + locStr + ' (' + lat.toFixed(4) + '°N, ' + lng.toFixed(4) + '°E)...") so they are confident their real-time location is active and being used!',
+    '- If the user has not shared GPS yet, politely suggest tapping "Share GPS" above for exact doorstep accuracy.',
     '',
     'GOOGLE MAPS & LOCATION INSTRUCTIONS:',
     '- Whenever you recommend a pandal, restaurant, or metro station, give the distance from the user in km and walking/driving estimates.',
@@ -163,13 +171,9 @@ export async function askGeminiPujoAi(
     '- Keep responses engaging and structured, avoiding overly lengthy walls of text.'
   ].join('\n');
 
-  // Build multi-turn contents array for Gemini
   const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
-
-  // 1. Seed grounding with the first user prompt or system instruction
   const initialContextPrompt = `${systemInstruction}\n\n--- LIVE GROUNDING DATA ---\n${groundingContext}`;
 
-  // 2. Add previous conversation history turns
   if (history && history.length > 0) {
     history.forEach((turn, idx) => {
       const role = turn.sender === 'user' ? 'user' : 'model';
@@ -178,7 +182,6 @@ export async function askGeminiPujoAi(
         : turn.text;
       contents.push({ role, parts: [{ text }] });
     });
-    // Add current user query
     contents.push({ role: 'user', parts: [{ text: userQuery }] });
   } else {
     contents.push({
@@ -187,7 +190,6 @@ export async function askGeminiPujoAi(
     });
   }
 
-  // 3. Attempt API call across priority models
   if (GEMINI_API_KEY) {
     for (const model of GEMINI_MODELS) {
       try {
@@ -213,7 +215,6 @@ export async function askGeminiPujoAi(
     }
   }
 
-  // 4. Fallback to local high-precision spatial engine if offline
   return getDirectGroundedPujoResponse(userQuery, location);
 }
 
@@ -226,13 +227,10 @@ function getDirectGroundedPujoResponse(userQuery: string, location?: LocationDat
   const lng = location?.longitude ?? 88.3639;
   const userLoc = location?.locality || 'your location in Kolkata';
 
-  // 1. Non-Pujo Filter
-  const nonPujo = ['react', 'python', 'javascript', 'crypto', 'bitcoin', 'stock', 'election', 'coding', 'programming'];
-  if (nonPujo.some(k => q.includes(k))) {
+  if (['react', 'python', 'javascript', 'crypto', 'bitcoin', 'stock', 'election', 'coding', 'programming'].some(k => q.includes(k))) {
     return 'নমস্কার! I am dedicated exclusively to Kolkata Durga Puja 2026 — pandals, rituals, food, and transit! Ask me where to hop next!';
   }
 
-  // 2. Nearest Metro / Transit Stations
   if (q.includes('metro') || q.includes('station') || q.includes('train') || q.includes('transit')) {
     const metros = findNearestStations(lat, lng, 3, 'metro');
     if (metros.length > 0) {
@@ -249,7 +247,6 @@ function getDirectGroundedPujoResponse(userQuery: string, location?: LocationDat
     return `🚇 Kolkata Metro operates extended midnight services during Durga Puja across Line 1 (North-South) and Green Line 2 (Howrah to Salt Lake).`;
   }
 
-  // 3. Nearest Pandals to User Location
   if (q.includes('near') || q.includes('here') || q.includes('closest') || q.includes('around me') || q.includes('nearby') || q.includes('top pandal')) {
     const allPandals: Array<{ name: string; zone: string; sector: string; dist: number }> = [];
     KOLKATA_SECTORS_DATA.forEach(zone => {
@@ -270,23 +267,20 @@ function getDirectGroundedPujoResponse(userQuery: string, location?: LocationDat
     if (top3.length > 0) {
       const items = top3.map(p => {
         const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(p.name + ' Kolkata')}&origin=${lat},${lng}`;
-        return `* **${p.name}** (${p.zone.toUpperCase()} Kolkata - ${p.sector})\n  * Distance: ~${p.dist} km\n  * [📍 Open in Google Maps](${url})`;
+        return `* **${p.name}** (${p.zone.toUpperCase()} Kolkata - ${p.sector})\n  * Distance from you: ~${p.dist} km (~${Math.round(p.dist * 13)} mins walk)\n  * [📍 Open in Google Maps](${url})`;
       }).join('\n\n');
 
-      return `🏛️ **Top Closest Pandals to ${userLoc}:**\n\n${items}\n\n[🗺️ View on Interactive Map](#open-map)`;
+      return `🏛️ **Top Closest Pandals from ${userLoc} (${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E):**\n\n${items}\n\n[🗺️ View on Interactive Map](#open-map)`;
     }
   }
 
-  // 4. Food & Restaurants
   if (q.includes('food') || q.includes('eat') || q.includes('restaurant') || q.includes('biryani') || q.includes('bhog') || q.includes('roll')) {
     return `🍽️ **Iconic Pujo Food Hotspots near Kolkata:**\n\n* **Arsalan & Shiraz (Park Circus / South)**: World-famous Kolkata Mutton Biryani with melt-in-mouth potato & egg.\n* **6 Ballygunge Place (Ballygunge)**: Authentic Bengali Daab Chingri, Kosha Mangsho & Luchi.\n* **Mitra Cafe (Shyambazar / North)**: Legendary Diamond Fish Fry, Kabiraji & Brain Chop.\n* **Peter Cat (Park Street)**: Iconic Chelo Kebab with buttered saffron rice.\n\n[📍 Find Food Spots in Google Maps](https://www.google.com/maps/search/restaurants+near+me+kolkata)`;
   }
 
-  // 5. Sandhi Puja & Timings
   if (q.includes('sandhi') || q.includes('timing') || q.includes('ashtami') || q.includes('date') || q.includes('schedule')) {
     return `🔥 **Durga Puja 2026 Auspicious Timings:**\n\n* **Maha Ashtami Sandhi Puja**: Exactly **10:48 PM to 11:36 PM** (Balidan moment at 11:12 PM).\n* **108 Lotuses & 108 Clay Lamps** are lit during the 48-minute celestial transition from Ashtami to Navami.\n* **Kumari Puja**: Morning of Maha Ashtami (9:00 AM) at Belur Math and Bagbazar.\n* **Sindoor Khela & Visarjan**: Dashami morning followed by immersion processions at Babughat and Bagbazar Ghat.\n\n[📋 Open Trip Planner to schedule this](#open-plan-trip)`;
   }
 
-  // General Grounded Welcome
   return `নমস্কার! I am **SHARODSHAV AI**, powered by Google Gemini and live Kolkata GPS grounding. \n\nYou are currently near **${userLoc}** (Coordinates: ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E).\n\nAsk me for:\n* 📍 Closest pandals and walking routes\n* 🚇 Nearest Metro station and night train schedules\n* 🍛 Iconic street food, kathi rolls & Biryani spots\n* 🔥 Auspicious ritual timings for Ashtami & Sandhi Puja\n\n[🗺️ Open Interactive 3D Map](#open-map)`;
 }
