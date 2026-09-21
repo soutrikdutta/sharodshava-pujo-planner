@@ -282,6 +282,47 @@ export const KOLKATA_TRANSIT_STATIONS: TransitStation[] = [
   },
 
   // ═══════════════════════════════════════════════════
+
+  // ═══════════════════════════════════════════════════
+  // METRO LINE 4 (Yellow Line) — Noapara ↔ Airport (Jessore Road corridor)
+  // ═══════════════════════════════════════════════════
+  {
+    name: 'Jessore Road',
+    bengaliName: 'যশোহর রোড',
+    lat: 22.6390,
+    lng: 88.4280,
+    type: 'metro',
+    line: 'Line 4 (Yellow)',
+    pujoTimings: '6:30 AM – 10:30 PM',
+    normalTimings: '7:00 AM – 9:30 PM',
+    pujoFrequencyMin: 10,
+    normalFrequencyMin: 15
+  },
+  {
+    name: 'Dum Dum Cantonment',
+    bengaliName: 'দমদম ক্যান্টনমেন্ট',
+    lat: 22.6360,
+    lng: 88.4060,
+    type: 'metro',
+    line: 'Line 4 (Yellow)',
+    pujoTimings: '6:30 AM – 10:30 PM',
+    normalTimings: '7:00 AM – 9:30 PM',
+    pujoFrequencyMin: 10,
+    normalFrequencyMin: 15
+  },
+  {
+    name: 'Jai Hind (Airport)',
+    bengaliName: 'জয় হিন্দ (বিমানবন্দর)',
+    lat: 22.6480,
+    lng: 88.4410,
+    type: 'metro',
+    line: 'Line 4 (Yellow)',
+    pujoTimings: '6:30 AM – 10:30 PM',
+    normalTimings: '7:00 AM – 9:30 PM',
+    pujoFrequencyMin: 10,
+    normalFrequencyMin: 15
+  },
+
   // METRO LINE 2 (Green Line) — Howrah Maidan ↔ Sector V (partial)
   // ═══════════════════════════════════════════════════
   {

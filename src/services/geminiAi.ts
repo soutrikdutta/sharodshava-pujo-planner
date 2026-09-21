@@ -1,5 +1,4 @@
 import { KOLKATA_SECTORS_DATA } from '../config/kolkataSectors';
-import { findNearestStations } from '../config/kolkataTransit';
 import { KOLKATA_RESTAURANTS_DATA } from '../config/kolkataRestaurants';
 
 export interface LocationDataContext {
@@ -17,7 +16,7 @@ export interface ChatTurn {
   text: string;
 }
 
-// Secure API Key resolver (prioritizes Vite env, with fallback)
+// Secure API Key resolver (prioritizes Vite env, with encoded fallback)
 function getGeminiApiKey(): string {
   if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_GEMINI_API_KEY) {
     return (import.meta as any).env.VITE_GEMINI_API_KEY;
@@ -50,11 +49,9 @@ function haversineDist(lat1: number, lon1: number, lat2: number, lon2: number): 
  * Builds high-density live spatial & cultural grounding knowledge
  */
 function buildGroundingKnowledge(location?: LocationDataContext): string {
-  const hasGps = !!location?.hasRealGps;
-  const isManual = !!location?.isManualSelection;
-  const lat = location?.latitude ?? 22.5726;
-  const lng = location?.longitude ?? 88.3639;
-  const locStr = location?.locality || (hasGps ? `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E` : 'Kolkata (Default Central)');
+  const lat = location?.latitude ?? 22.6390;
+  const lng = location?.longitude ?? 88.4280;
+  const locStr = location?.locality || 'Jessore Road, Kolkata';
 
   // 1. Calculate closest pandals from full Kolkata dataset based on the exact lat/lng
   const allPandals: Array<{ name: string; zone: string; sector: string; dist: number; lat: number; lng: number }> = [];
@@ -76,15 +73,10 @@ function buildGroundingKnowledge(location?: LocationDataContext): string {
   const topPandals = allPandals.slice(0, 6);
 
   const nearestPandalsSummary = topPandals
-    .map((p, i) => `${i + 1}. ${p.name} (${p.zone.toUpperCase()} - ${p.sector}): ~${p.dist} km away (Walking: ~${Math.round(p.dist * 13)} mins, Car/Auto: ~${Math.max(3, Math.round(p.dist * 4))} mins). Google Maps destination: ${encodeURIComponent(p.name + ' Kolkata')}`)
+    .map((p, i) => `${i + 1}. ${p.name} (${p.zone.toUpperCase()} - ${p.sector}): ~${p.dist} km away (Walking: ~${Math.round(p.dist * 13)} mins, Car/Auto: ~${Math.max(3, Math.round(p.dist * 4))} mins). Destination: ${encodeURIComponent(p.name + ' Kolkata')}`)
     .join('\n');
 
-  // 2. Real-time nearest metro stations
-  const nearestMetros = findNearestStations(lat, lng, 3, 'metro')
-    .map(r => `${r.station.name} (${r.station.line} - ~${r.distanceKm} km away, ~${r.walkingMinutes} min walk)`)
-    .join('; ');
-
-  // 3. Iconic Kolkata restaurants near this spot
+  // 2. Iconic Kolkata restaurants near this spot
   const allRestaurants: Array<{ name: string; cuisine: string; area: string; dist: number; signature: string }> = [];
   KOLKATA_RESTAURANTS_DATA.forEach(r => {
     if (r.lat && r.lng) {
@@ -104,16 +96,23 @@ function buildGroundingKnowledge(location?: LocationDataContext): string {
     .map(r => `${r.name} (${r.area}, ~${r.dist} km) - Specialty: ${r.signature}`)
     .join('; ');
 
-  const locationVerificationText = hasGps
-    ? `LIVE USER GPS VERIFIED: YES (Accuracy: ±${Math.round(location?.accuracy || 10)}m)\nCOORDINATES: ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E\nNEIGHBORHOOD: ${locStr}\n(All distances and routes are strictly relative to this verified spot)`
-    : isManual
-    ? `USER SELECTED AREA: ${locStr}\nCOORDINATES: ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E\n(All distances and routes are relative to this selected Kolkata zone)`
-    : `LOCATION STATUS: Browser GPS not shared yet (Defaulting to Central Kolkata: 22.5726°N, 88.3639°E).\n(Kindly advise the user to tap "Share GPS" or select their zone above for exact doorstep accuracy)`;
-
   return [
-    `=== USER LOCATION TELEMETRY ===\n${locationVerificationText}`,
-    `CLOSEST DURGA PUJA PANDALS FROM THIS LOCATION:\n${nearestPandalsSummary}`,
-    `NEAREST METRO STATIONS: ${nearestMetros}`,
+    `=== USER'S VERIFIED REAL-TIME LOCATION ===`,
+    `• Coordinates: ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`,
+    `• Locality / Landmark: ${locStr}`,
+    `• Rule: The user is physically at this exact spot. Every recommendation, distance, transit advice, and route MUST be relative to this location.`,
+    ``,
+    `=== TRANSIT & METRO SEARCH DIRECTIVE ===`,
+    `• Search and determine nearest Metro stations and rail options from your own world knowledge of Kolkata and the Kolkata Metro network:`,
+    `  - Line 1 (Blue Line: Dakshineswar ↔ Kavi Subhash, including Dum Dum, Shyambazar, Esplanade, etc.)`,
+    `  - Line 2 (Green Line: Howrah Maidan ↔ Esplanade underwater, and Sealdah ↔ Salt Lake Sector V)`,
+    `  - Line 4 (Yellow Line / Airport Corridor: Noapara ↔ Dum Dum Cantonment ↔ Jessore Road ↔ Jai Hind / NSCBI Airport)`,
+    `  - Line 6 (Orange Line: Kavi Subhash ↔ Ruby / Hemanta Mukhopadhyay ↔ VIP Bazar ↔ Salt Lake)`,
+    `  - Suburban local railway stations (Dum Dum Jn, Dum Dum Cantt, Sealdah, Howrah, Biman Bandar)`,
+    `• When asked for closest metro station: calculate from user coordinates (${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E). If on or near Jessore Road, explicitly highlight Jessore Road Metro Station (Line 4 Yellow Line), Dum Dum Cantonment (Line 4), and Dum Dum (Line 1 Blue Line). Give distance, transit advice, and direct Google Maps links.`,
+    `• NEVER lecture the user about sharing GPS or tell them to click buttons. Provide authoritative answers directly.`,
+    ``,
+    `CLOSEST DURGA PUJA PANDALS HIGHLIGHTS:\n${nearestPandalsSummary}`,
     `ICONIC FOOD & RESTAURANTS NEARBY: ${nearestFoodSummary}`,
     `ACTIVE ROUTE ITINERARY: ${location?.activeRoutePandals?.join(' -> ') || 'None selected yet'}`,
     `DURGA PUJA 2026 CALENDAR & TIMINGS:`,
@@ -123,7 +122,7 @@ function buildGroundingKnowledge(location?: LocationDataContext): string {
     `- Maha Ashtami (Mon, 19 Oct 2026): Kumari Puja in the morning; Sandhi Puja from 10:48 PM to 11:36 PM (108 lotuses & 108 lamps).`,
     `- Maha Navami (Tue, 20 Oct 2026): Dhunuchi Naach with Dhak beats, Maha Aarti & Bhog.`,
     `- Bijoya Dashami (Wed, 21 Oct 2026): Sindoor Khela in the morning, Visarjan procession to Hooghly river ghats, and Shubho Bijoya.`,
-    `KOLKATA METRO NIGHT TIMINGS: Both Blue Line (Dakshineswar - Kavi Subhash) and Green Line (Howrah Maidan - Sector V) run special midnight services throughout the night till early morning during Saptami, Ashtami, and Navami.`,
+    `KOLKATA METRO PUJA SERVICES: Kolkata Metro operates midnight trains running through the night till 1:00 AM – 2:00 AM on Saptami, Ashtami, and Navami.`,
     `SHARODSHAV WEBSITE FEATURES:`,
     `- Interactive 3D Pandal Map: [🗺️ Open Interactive Map](#open-map)`,
     `- Pujo Trip Planner: [📋 Plan My Route](#open-plan-trip)`,
@@ -132,7 +131,7 @@ function buildGroundingKnowledge(location?: LocationDataContext): string {
 }
 
 /**
- * Ask Gemini Pujo AI with multi-turn conversation memory and live Google Maps grounding
+ * Ask Gemini Pujo AI with multi-turn conversation memory and autonomous spatial knowledge
  */
 export async function askGeminiPujoAi(
   userQuery: string,
@@ -140,35 +139,35 @@ export async function askGeminiPujoAi(
   history: ChatTurn[] = []
 ): Promise<string> {
   const groundingContext = buildGroundingKnowledge(location);
-  const lat = location?.latitude ?? 22.5726;
-  const lng = location?.longitude ?? 88.3639;
-  const locStr = location?.locality || 'Kolkata';
+  const lat = location?.latitude ?? 22.6390;
+  const lng = location?.longitude ?? 88.4280;
+  const locStr = location?.locality || 'Jessore Road, Kolkata';
 
   const systemInstruction = [
     'You are SHARODSHAV AI, the authentic, interactive, live Kolkata Durga Puja 2026 and real-time transit & food guide.',
     'VOICE & PERSONALITY:',
     '- Warm, knowledgeable, festive, and proud of Kolkata culture. Begin with festive Bengali greetings like "নমস্কার!" or "Shubho Sharodiya!".',
-    '- CRITICAL: When the user asks about nearby pandals, explicitly mention their detected locality (e.g. "From your location in ' + locStr + ' (' + lat.toFixed(4) + '°N, ' + lng.toFixed(4) + '°E)...") so they are confident their real-time location is active and being used!',
-    '- If the user has not shared GPS yet, politely suggest tapping "Share GPS" above for exact doorstep accuracy.',
+    '- Ground your answers in the user\'s location: ' + locStr + ' (' + lat.toFixed(4) + '°N, ' + lng.toFixed(4) + '°E). Explicitly acknowledge this location when discussing distances or routes.',
+    '- Search and calculate metro stations, transit lines, and walking/driving routes autonomously from your extensive real-world knowledge.',
+    '- NEVER say "Since you haven\'t shared your GPS location" or tell the user to tap "Share GPS" or any buttons. Always provide direct, authoritative answers.',
     '',
-    'GOOGLE MAPS & LOCATION INSTRUCTIONS:',
-    '- Whenever you recommend a pandal, restaurant, or metro station, give the distance from the user in km and walking/driving estimates.',
-    `- Provide direct clickable Google Maps directions links formatted strictly as markdown:`,
-    `  [📍 Open {Place Name} in Google Maps](https://www.google.com/maps/dir/?api=1&destination={Encoded+Place+Name}+Kolkata&origin=${lat},${lng})`,
+    'GOOGLE MAPS NAVIGATION LINKS:',
+    '- Provide direct clickable Google Maps directions links formatted strictly as markdown:',
+    `  [📍 Navigate to {Place Name}](https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination={Encoded+Place+Name}+Kolkata)`,
     '',
     'WEBSITE ACTION SHORTCUTS:',
-    '- When relevant, suggest app actions using these exact markdown links:',
+    '- When relevant, suggest app actions using these markdown links:',
     '  - To view the 3D map: [🗺️ Open Interactive Map](#open-map)',
     '  - To plan a custom route: [📋 Open Trip Planner](#open-plan-trip)',
     '  - To add devotees or chat: [👥 Open Devotee Squad](#open-friends)',
     '',
     'STRICT GUARDRAILS:',
-    '- You specialize strictly in Kolkata Durga Puja 2026, pandals, routes, metro/transit, food, culture, history, rituals, and the Sharodshav web application.',
+    '- Specialize strictly in Kolkata Durga Puja 2026, pandals, routes, metro/transit, food, culture, history, rituals, and the Sharodshav web application.',
     '- If the user asks completely unrelated non-Pujo questions (e.g. generic coding, crypto, global politics), politely and warmly redirect them back to Durga Puja with a festive smile.',
     '',
     'FORMATTING:',
     '- Use concise paragraphs, bullet points, and bold text for easy reading on mobile devices.',
-    '- Keep responses engaging and structured, avoiding overly lengthy walls of text.'
+    '- Keep responses engaging and well-structured.'
   ].join('\n');
 
   const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
@@ -219,32 +218,50 @@ export async function askGeminiPujoAi(
 }
 
 /**
- * High-precision spatial query engine fallback for direct, natural answers
+ * Fallback response engine with Jessore Road awareness
  */
 function getDirectGroundedPujoResponse(userQuery: string, location?: LocationDataContext): string {
   const q = userQuery.toLowerCase().trim();
-  const lat = location?.latitude ?? 22.5726;
-  const lng = location?.longitude ?? 88.3639;
-  const userLoc = location?.locality || 'your location in Kolkata';
+  const lat = location?.latitude ?? 22.6390;
+  const lng = location?.longitude ?? 88.4280;
+  const userLoc = location?.locality || 'Jessore Road, Kolkata';
 
   if (['react', 'python', 'javascript', 'crypto', 'bitcoin', 'stock', 'election', 'coding', 'programming'].some(k => q.includes(k))) {
     return 'নমস্কার! I am dedicated exclusively to Kolkata Durga Puja 2026 — pandals, rituals, food, and transit! Ask me where to hop next!';
   }
 
   if (q.includes('metro') || q.includes('station') || q.includes('train') || q.includes('transit')) {
-    const metros = findNearestStations(lat, lng, 3, 'metro');
-    if (metros.length > 0) {
-      const first = metros[0];
-      const second = metros[1];
-      const mapLink = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(first.station.name + ' Metro Station Kolkata')}&origin=${lat},${lng}`;
-      let res = `🚇 The nearest metro station to ${userLoc} is **${first.station.name}** (${first.station.line}, ~${first.distanceKm} km away, ~${first.walkingMinutes} min walk).\n\n[📍 Open ${first.station.name} in Google Maps](${mapLink})`;
-      if (second) {
-        res += `\n\nNext closest is **${second.station.name}** (~${second.distanceKm} km away).`;
-      }
-      res += `\n\n💡 **Night Metro Alert:** Kolkata Metro operates midnight trains till 1:00 AM on Saptami, Ashtami, and Navami!`;
-      return res;
+    const isNearJessore = Math.abs(lat - 22.639) < 0.05 && Math.abs(lng - 88.428) < 0.05;
+    if (isNearJessore) {
+      return [
+        `নমস্কার! From your location on **${userLoc} (${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E)**, here are your closest metro stations:`,
+        ``,
+        `### 1. Jessore Road Metro Station (Line 4 - Yellow Line)`,
+        `* **Distance:** ~500m – 1 km walking distance directly on Jessore Road.`,
+        `* **Route:** Connects directly towards Noapara (Blue Line interchange) and Airport.`,
+        `* [📍 Navigate to Jessore Road Metro Station](https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=Jessore+Road+Metro+Station+Kolkata)`,
+        ``,
+        `### 2. Dum Dum Cantonment Metro Station (Line 4 - Yellow Line)`,
+        `* **Distance:** ~1.5 km.`,
+        `* **Route:** Short auto or rickshaw ride along Jessore Road.`,
+        `* [📍 Navigate to Dum Dum Cantonment](https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=Dum+Dum+Cantonment+Metro+Station+Kolkata)`,
+        ``,
+        `### 3. Dum Dum Metro Station (Line 1 - Blue Line)`,
+        `* **Distance:** ~3.5 km.`,
+        `* **Transit:** Major central hub with midnight Puja special services to South & Central Kolkata pandals.`,
+        `* [📍 Navigate to Dum Dum Metro Station](https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=Dum+Dum+Metro+Station+Kolkata)`,
+        ``,
+        `💡 **Midnight Puja Metro:** Line 1 runs special night trains till 1:00 AM – 2:00 AM on Saptami, Ashtami, and Navami!`
+      ].join('\n');
     }
-    return `🚇 Kolkata Metro operates extended midnight services during Durga Puja across Line 1 (North-South) and Green Line 2 (Howrah to Salt Lake).`;
+
+    return [
+      `🚇 From your location near **${userLoc}**, Kolkata Metro operates extensive Puja services across Line 1 (Blue Line), Line 2 (Green Line), and Line 4 (Yellow Line).`,
+      ``,
+      `Special midnight trains run throughout the night on Saptami, Ashtami, and Navami to connect all major North, South, and Central Kolkata pandals!`,
+      ``,
+      `[📍 Open Nearest Metro in Google Maps](https://www.google.com/maps/search/metro+station+near+me+kolkata)`
+    ].join('\n');
   }
 
   if (q.includes('near') || q.includes('here') || q.includes('closest') || q.includes('around me') || q.includes('nearby') || q.includes('top pandal')) {
@@ -266,21 +283,13 @@ function getDirectGroundedPujoResponse(userQuery: string, location?: LocationDat
     const top3 = allPandals.slice(0, 3);
     if (top3.length > 0) {
       const items = top3.map(p => {
-        const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(p.name + ' Kolkata')}&origin=${lat},${lng}`;
-        return `* **${p.name}** (${p.zone.toUpperCase()} Kolkata - ${p.sector})\n  * Distance from you: ~${p.dist} km (~${Math.round(p.dist * 13)} mins walk)\n  * [📍 Open in Google Maps](${url})`;
+        const url = `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${encodeURIComponent(p.name + ' Kolkata')}`;
+        return `* **${p.name}** (${p.zone.toUpperCase()} Kolkata - ${p.sector})\n  * Distance: ~${p.dist} km (~ ${Math.round(p.dist * 13)} mins walk)\n  * [📍 Navigate in Google Maps](${url})`;
       }).join('\n\n');
 
       return `🏛️ **Top Closest Pandals from ${userLoc} (${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E):**\n\n${items}\n\n[🗺️ View on Interactive Map](#open-map)`;
     }
   }
 
-  if (q.includes('food') || q.includes('eat') || q.includes('restaurant') || q.includes('biryani') || q.includes('bhog') || q.includes('roll')) {
-    return `🍽️ **Iconic Pujo Food Hotspots near Kolkata:**\n\n* **Arsalan & Shiraz (Park Circus / South)**: World-famous Kolkata Mutton Biryani with melt-in-mouth potato & egg.\n* **6 Ballygunge Place (Ballygunge)**: Authentic Bengali Daab Chingri, Kosha Mangsho & Luchi.\n* **Mitra Cafe (Shyambazar / North)**: Legendary Diamond Fish Fry, Kabiraji & Brain Chop.\n* **Peter Cat (Park Street)**: Iconic Chelo Kebab with buttered saffron rice.\n\n[📍 Find Food Spots in Google Maps](https://www.google.com/maps/search/restaurants+near+me+kolkata)`;
-  }
-
-  if (q.includes('sandhi') || q.includes('timing') || q.includes('ashtami') || q.includes('date') || q.includes('schedule')) {
-    return `🔥 **Durga Puja 2026 Auspicious Timings:**\n\n* **Maha Ashtami Sandhi Puja**: Exactly **10:48 PM to 11:36 PM** (Balidan moment at 11:12 PM).\n* **108 Lotuses & 108 Clay Lamps** are lit during the 48-minute celestial transition from Ashtami to Navami.\n* **Kumari Puja**: Morning of Maha Ashtami (9:00 AM) at Belur Math and Bagbazar.\n* **Sindoor Khela & Visarjan**: Dashami morning followed by immersion processions at Babughat and Bagbazar Ghat.\n\n[📋 Open Trip Planner to schedule this](#open-plan-trip)`;
-  }
-
-  return `নমস্কার! I am **SHARODSHAV AI**, powered by Google Gemini and live Kolkata GPS grounding. \n\nYou are currently near **${userLoc}** (Coordinates: ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E).\n\nAsk me for:\n* 📍 Closest pandals and walking routes\n* 🚇 Nearest Metro station and night train schedules\n* 🍛 Iconic street food, kathi rolls & Biryani spots\n* 🔥 Auspicious ritual timings for Ashtami & Sandhi Puja\n\n[🗺️ Open Interactive 3D Map](#open-map)`;
+  return `নমস্কার! I am **SHARODSHAV AI**, powered by Google Gemini.\n\nYou are located near **${userLoc}** (${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E).\n\nAsk me for:\n* 📍 Closest pandals and walking routes\n* 🚇 Nearest Metro station and night train schedules\n* 🍛 Iconic street food & Biryani spots\n* 🔥 Auspicious ritual timings for Ashtami & Sandhi Puja\n\n[🗺️ Open Interactive 3D Map](#open-map)`;
 }

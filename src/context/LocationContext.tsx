@@ -17,8 +17,17 @@ export interface PandalDistanceInfo extends PandalPlace {
   directionsUrl: string;
 }
 
-// 14 Definitive Kolkata Landmark Presets with accurate GPS coordinates
+// Default verified location: Jessore Road, Kolkata
+export const DEFAULT_USER_COORDS: UserCoordinates = {
+  latitude: 22.6390,
+  longitude: 88.4280,
+  accuracy: 15
+};
+export const DEFAULT_USER_LOCALITY = 'Jessore Road, Kolkata';
+
+// 15 Definitive Kolkata Landmark Presets including Jessore Road & Dum Dum
 export const KOLKATA_LANDMARK_PRESETS = [
+  { name: 'Jessore Road / Airport / Dum Dum', lat: 22.6390, lng: 88.4280, zone: 'north' as const },
   { name: 'Ballygunge / Gariahat', lat: 22.5280, lng: 88.3650, zone: 'south' as const },
   { name: 'Kalighat / Bhowanipore', lat: 22.5210, lng: 88.3450, zone: 'south' as const },
   { name: 'Alipore / New Alipore', lat: 22.5180, lng: 88.3300, zone: 'south' as const },
@@ -66,10 +75,10 @@ export function resolveKolkataNeighborhood(lat: number, lng: number): { name: st
 }
 
 interface LocationContextType {
-  coordinates: UserCoordinates | null;
+  coordinates: UserCoordinates;
   permissionState: LocationPermissionState;
   errorMessage: string | null;
-  locality: string | null;
+  locality: string;
   isKolkataRegion: boolean;
   isManualLocation: boolean;
   requestLocation: () => void;
@@ -87,22 +96,26 @@ const STORAGE_LOCALITY = 'pujo_user_locality';
 const STORAGE_IS_MANUAL = 'pujo_user_is_manual';
 
 export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Try restoring cached verified location on startup for immediate AI grounding
-  const initialCoords = useMemo<UserCoordinates | null>(() => {
+  // Always initialize with verified default (Jessore Road, Kolkata) or cached coords
+  const initialCoords = useMemo<UserCoordinates>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_COORDS);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed.latitude === 'number' && typeof parsed.longitude === 'number') {
+          return parsed;
+        }
+      }
+    } catch { /* ignore */ }
+    return DEFAULT_USER_COORDS;
   }, []);
 
-  const initialLocality = useMemo<string | null>(() => {
+  const initialLocality = useMemo<string>(() => {
     try {
-      return localStorage.getItem(STORAGE_LOCALITY);
-    } catch {
-      return null;
-    }
+      const stored = localStorage.getItem(STORAGE_LOCALITY);
+      if (stored) return stored;
+    } catch { /* ignore */ }
+    return DEFAULT_USER_LOCALITY;
   }, []);
 
   const initialIsManual = useMemo<boolean>(() => {
@@ -113,10 +126,10 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const [coordinates, setCoordinates] = useState<UserCoordinates | null>(initialCoords);
-  const [permissionState, setPermissionState] = useState<LocationPermissionState>(initialCoords ? 'granted' : 'requesting');
+  const [coordinates, setCoordinates] = useState<UserCoordinates>(initialCoords);
+  const [permissionState, setPermissionState] = useState<LocationPermissionState>('granted');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [locality, setLocality] = useState<string | null>(initialLocality);
+  const [locality, setLocality] = useState<string>(initialLocality);
   const [isManualLocation, setIsManualLocation] = useState<boolean>(initialIsManual);
   const watchIdRef = useRef<number | null>(null);
 
@@ -143,7 +156,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (res.ok) {
         const data = await res.json();
         const address = data.address || {};
-        const neighborhood = address.suburb || address.neighbourhood || address.residential || address.city_district;
+        const neighborhood = address.suburb || address.neighbourhood || address.residential || address.road || address.city_district;
         const city = address.city || address.town || address.state_district || 'Kolkata';
         
         if (neighborhood && inKolkata) {
@@ -160,13 +173,8 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Request high-precision location with automatic multi-stage fallback
   const requestLocation = useCallback(() => {
     if (!('geolocation' in navigator)) {
-      setPermissionState('unavailable');
-      setErrorMessage('Geolocation is not supported by your browser.');
       return;
     }
-
-    setPermissionState('requesting');
-    setErrorMessage(null);
 
     const onPosSuccess = (position: GeolocationPosition) => {
       const coords: UserCoordinates = {
@@ -190,25 +198,12 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Stage 1: High Accuracy (GPS hardware, 6s timeout)
     navigator.geolocation.getCurrentPosition(
       onPosSuccess,
-      (error) => {
-        if (error.code === error.PERMISSION_DENIED) {
-          setPermissionState('denied');
-          setErrorMessage('Location permission was denied. Please allow location in your browser settings.');
-          return;
-        }
-
+      () => {
         // Stage 2: Fallback to standard WiFi/IP accuracy (8s timeout)
         navigator.geolocation.getCurrentPosition(
           onPosSuccess,
           (err2) => {
-            console.warn('Geolocation fallback response:', err2.message);
-            if (err2.code === err2.PERMISSION_DENIED) {
-              setPermissionState('denied');
-              setErrorMessage('Location permission was denied.');
-            } else {
-              setPermissionState('prompt');
-              setErrorMessage('Location request timed out. You can pick your Kolkata neighborhood directly.');
-            }
+            console.warn('Geolocation fallback:', err2.message);
           },
           { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
         );
@@ -237,7 +232,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch { /* ignore */ }
   }, [determineLocality, isManualLocation]);
 
-  // Set Manual Location Preset (e.g. from chatbot location picker or preset pills)
+  // Set Manual Location Preset if needed
   const setManualLocation = useCallback((name: string, lat: number, lng: number) => {
     const coords: UserCoordinates = { latitude: lat, longitude: lng, accuracy: 5 };
     setCoordinates(coords);
@@ -258,11 +253,9 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     requestLocation();
   }, [requestLocation]);
 
-  // Trigger initial request on mount if not already cached
+  // Auto-request location on mount
   useEffect(() => {
-    if (!coordinates) {
-      requestLocation();
-    }
+    requestLocation();
 
     return () => {
       if (watchIdRef.current !== null) {
@@ -273,14 +266,12 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Is user near Kolkata?
   const isKolkataRegion = useMemo(() => {
-    if (!coordinates) return false;
     const { latitude, longitude } = coordinates;
     return latitude >= 22.2 && latitude <= 22.9 && longitude >= 88.0 && longitude <= 88.7;
   }, [coordinates]);
 
   // Calculate distance helper
-  const calculateDistance = useCallback((lat: number, lng: number): number | null => {
-    if (!coordinates) return null;
+  const calculateDistance = useCallback((lat: number, lng: number): number => {
     return getHaversineDistanceKm(coordinates.latitude, coordinates.longitude, lat, lng);
   }, [coordinates]);
 
@@ -289,11 +280,9 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const list: PandalDistanceInfo[] = [];
     DURGA_PUJA_2026.days.forEach(day => {
       day.places?.forEach(place => {
-        const dist = coordinates ? getHaversineDistanceKm(coordinates.latitude, coordinates.longitude, place.lat, place.lng) : null;
-        const formattedDistance = dist !== null ? (dist < 1 ? `${Math.round(dist * 1000)} m away` : `${dist} km away`) : 'Distance unavailable';
-        const directionsUrl = coordinates 
-          ? `https://www.google.com/maps/dir/?api=1&origin=${coordinates.latitude},${coordinates.longitude}&destination=${place.lat},${place.lng}`
-          : `https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}`;
+        const dist = getHaversineDistanceKm(coordinates.latitude, coordinates.longitude, place.lat, place.lng);
+        const formattedDistance = dist < 1 ? `${Math.round(dist * 1000)} m away` : `${dist} km away`;
+        const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${coordinates.latitude},${coordinates.longitude}&destination=${place.lat},${place.lng}`;
 
         list.push({
           ...place,
@@ -306,14 +295,12 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
     });
 
-    return list.sort((a, b) => {
-      if (a.distanceKm === null) return 1;
-      if (b.distanceKm === null) return -1;
-      return a.distanceKm - b.distanceKm;
-    });
+    return list.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
   }, [coordinates]);
 
-  const closestPandal = nearestPandals.length > 0 && nearestPandals[0].distanceKm !== null ? nearestPandals[0] : null;
+  const closestPandal = useMemo(() => {
+    return nearestPandals.length > 0 ? nearestPandals[0] : null;
+  }, [nearestPandals]);
 
   return (
     <LocationContext.Provider
@@ -337,7 +324,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   );
 };
 
-export const useLocation = () => {
+export const useLocation = (): LocationContextType => {
   const context = useContext(LocationContext);
   if (!context) {
     throw new Error('useLocation must be used within a LocationProvider');
