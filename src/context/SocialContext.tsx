@@ -8,6 +8,7 @@ import { useAuth } from './AuthContext';
 import { useLocation } from './LocationContext';
 import { 
   syncUserProfile, 
+  subscribeToCurrentUserProfile,
   subscribeToAllUsers, 
   subscribeToFriendRequests, 
   sendFriendRequestToDb, 
@@ -44,6 +45,15 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [allUsers, setAllUsers] = useState<FriendProfile[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [chats, setChats] = useState<Record<string, ChatMessage[]>>({});
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
+
+  // Reset states completely when authenticated user changes
+  useEffect(() => {
+    setAllUsers([]);
+    setRequests([]);
+    setChats({});
+    setCurrentUserProfile(null);
+  }, [user?.uid]);
 
   // 1. Sync Current Google User Profile to Firebase Backend
   useEffect(() => {
@@ -55,55 +65,56 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [user, locality, coordinates]);
 
-  // 2. Real-time Subscription to ALL registered Google devotees in Cloud Firestore
+  // 2. Subscribe to Current User Document in Firestore
+  useEffect(() => {
+    if (!user?.uid) return;
+    const unsub = subscribeToCurrentUserProfile(user.uid, (profile) => {
+      setCurrentUserProfile(profile);
+    });
+    return () => unsub();
+  }, [user?.uid]);
+
+  // 3. Real-time Subscription to ALL registered Google devotees in Cloud Firestore
   useEffect(() => {
     if (!user?.uid) return;
     const unsub = subscribeToAllUsers(user.uid, (users) => {
       setAllUsers(users);
     });
     return () => unsub();
-  }, [user]);
+  }, [user?.uid]);
 
-  // 3. Real-time Subscription to Friend Requests for this user in Cloud Firestore
+  // 4. Real-time Subscription to Friend Requests for this user in Cloud Firestore
   useEffect(() => {
     if (!user?.uid) return;
     const unsub = subscribeToFriendRequests(user.uid, (dbRequests) => {
       setRequests(dbRequests);
     });
     return () => unsub();
-  }, [user]);
+  }, [user?.uid]);
 
-  // Compute confirmed Friends based on accepted requests & user document friends array
+  // Compute confirmed Friends strictly based on Firestore user document friends & accepted requests
   const friends = useMemo(() => {
     if (!user?.uid) return [];
 
     const acceptedUserIds = new Set<string>();
     
+    // 1. Live friends from current user profile
+    if (currentUserProfile?.friends) {
+      currentUserProfile.friends.forEach(fId => acceptedUserIds.add(fId));
+    }
+
+    // 2. Verified accepted friend requests strictly matching UIDs
     requests.forEach(r => {
       if (r.status === 'accepted') {
-        const fromId = (r as any).fromUserId;
-        const toId = (r as any).toUserId;
-        if (fromId === user.uid && toId) acceptedUserIds.add(toId);
-        if (toId === user.uid && fromId) acceptedUserIds.add(fromId);
-        const matched = allUsers.find(u => u.name.toLowerCase() === r.senderName.toLowerCase());
-        if (matched) acceptedUserIds.add(matched.id);
+        if (r.fromUserId === user.uid && r.toUserId) acceptedUserIds.add(r.toUserId);
+        if (r.toUserId === user.uid && r.fromUserId) acceptedUserIds.add(r.fromUserId);
       }
     });
 
-    try {
-      const uRaw = localStorage.getItem('pujo_db_users_v2');
-      if (uRaw) {
-        const uMap: Record<string, UserProfile> = JSON.parse(uRaw);
-        if (uMap[user.uid]?.friends) {
-          uMap[user.uid].friends?.forEach(fId => acceptedUserIds.add(fId));
-        }
-      }
-    } catch { /* ignore */ }
-
     return allUsers.filter(u => acceptedUserIds.has(u.id));
-  }, [user, requests, allUsers]);
+  }, [user?.uid, currentUserProfile, requests, allUsers]);
 
-  // 4. Real-time Chat Subscription for all confirmed friends
+  // 5. Real-time Chat Subscription for all confirmed friends (keyed strictly by chatId)
   useEffect(() => {
     if (!user?.uid || friends.length === 0) return;
     const unsubs: (() => void)[] = [];
@@ -111,19 +122,17 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     friends.forEach(friend => {
       const chatId = getDeterministicChatId(user.uid, friend.id);
       const unsub = subscribeToChatMessages(chatId, (messages) => {
-        if (messages.length > 0) {
-          setChats(prev => ({
-            ...prev,
-            [friend.id]: messages,
-            [chatId]: messages
-          }));
-        }
+        setChats(prev => ({
+          ...prev,
+          [chatId]: messages,
+          [friend.id]: messages
+        }));
       });
       unsubs.push(unsub);
     });
 
     return () => unsubs.forEach(u => u());
-  }, [user, friends]);
+  }, [user?.uid, friends]);
 
   const pendingReceivedCount = useMemo(() => {
     return requests.filter(r => r.type === 'received' && r.status === 'pending').length;
@@ -152,12 +161,12 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const acceptRequest = useCallback((requestId: string, friendId?: string) => {
     if (!user) return;
     const req = requests.find(r => r.id === requestId);
-    const targetFriendId = friendId || (req as any)?.fromUserId || allUsers.find(u => u.name === req?.senderName)?.id;
+    const targetFriendId = friendId || req?.fromUserId || req?.toUserId;
     
-    if (targetFriendId) {
+    if (targetFriendId && targetFriendId !== user.uid) {
       acceptFriendRequestInDb(requestId, user.uid, targetFriendId);
     }
-  }, [user, requests, allUsers]);
+  }, [user, requests]);
 
   // 3. Decline Friend Request (Cross Button)
   const declineRequest = useCallback((requestId: string) => {
@@ -174,7 +183,7 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const sendMessage = useCallback((friendId: string, text: string) => {
     if (!text.trim() || !user) return;
     const chatId = getDeterministicChatId(user.uid, friendId);
-    sendChatMessageToDb(chatId, friendId, user.uid, text.trim());
+    sendChatMessageToDb(chatId, friendId, user, text.trim());
   }, [user]);
 
   // 6. Share Route Card in Chat
@@ -185,7 +194,7 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       : `🗺️ Hey! Join our Pujo hopping route tonight!`;
 
     const chatId = getDeterministicChatId(user.uid, friendId);
-    sendChatMessageToDb(chatId, friendId, user.uid, routeText, pandals);
+    sendChatMessageToDb(chatId, friendId, user, routeText, pandals);
   }, [user]);
 
   return (

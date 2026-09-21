@@ -20,6 +20,8 @@ export interface FriendProfile {
 
 export interface FriendRequest {
   id: string;
+  fromUserId?: string;
+  toUserId?: string;
   senderName: string;
   senderAvatar: string;
   zone: string;
@@ -32,10 +34,15 @@ export interface FriendRequest {
 
 export interface ChatMessage {
   id: string;
+  chatId?: string;
   friendId: string;
-  sender: 'me' | 'friend';
+  senderId?: string;
+  senderName?: string;
+  senderAvatar?: string;
+  sender?: 'me' | 'friend';
   text: string;
   timestamp: string;
+  createdAt?: any;
   isRouteCard?: boolean;
   routeData?: {
     title: string;
@@ -45,8 +52,5 @@ export interface ChatMessage {
 }
 
 export const INITIAL_FRIENDS_ON_ROUTE: FriendProfile[] = [];
-
 export const INITIAL_REQUESTS: FriendRequest[] = [];
-
 export const INITIAL_CHATS: Record<string, ChatMessage[]> = {};
-
