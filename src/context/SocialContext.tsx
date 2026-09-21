@@ -33,11 +33,9 @@ interface SocialContextType {
   deleteFriend: (friendId: string) => void;
   sendMessage: (friendId: string, text: string) => void;
   shareRouteWithFriend: (friendId: string, pandals: string[]) => void;
-  addSimulatedDevotee: (name: string, pandal: string, zone?: 'north' | 'central' | 'south') => void;
 }
 
 const SocialContext = createContext<SocialContextType | undefined>(undefined);
-
 
 export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -49,7 +47,7 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // 1. Sync Current Google User Profile to Firebase Backend
   useEffect(() => {
-    if (user) {
+    if (user?.uid) {
       syncUserProfile(user, {
         locality: locality || 'Kolkata',
         coordinates: coordinates ? { lat: coordinates.latitude, lng: coordinates.longitude } : undefined
@@ -57,7 +55,7 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [user, locality, coordinates]);
 
-  // 2. Real-time Subscription to ALL registered devotees in the database
+  // 2. Real-time Subscription to ALL registered Google devotees in Cloud Firestore
   useEffect(() => {
     if (!user?.uid) return;
     const unsub = subscribeToAllUsers(user.uid, (users) => {
@@ -66,7 +64,7 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => unsub();
   }, [user]);
 
-  // 3. Real-time Subscription to Friend Requests for this user
+  // 3. Real-time Subscription to Friend Requests for this user in Cloud Firestore
   useEffect(() => {
     if (!user?.uid) return;
     const unsub = subscribeToFriendRequests(user.uid, (dbRequests) => {
@@ -75,14 +73,10 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => unsub();
   }, [user]);
 
-  // Compute accepted Friends:
-  // A user is a confirmed friend if:
-  // 1) There is an accepted request between user and friend, OR
-  // 2) The current user's profile lists them in 'friends'
+  // Compute confirmed Friends based on accepted requests & user document friends array
   const friends = useMemo(() => {
     if (!user?.uid) return [];
 
-    // Find all friend user IDs from accepted requests
     const acceptedUserIds = new Set<string>();
     
     requests.forEach(r => {
@@ -91,15 +85,13 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const toId = (r as any).toUserId;
         if (fromId === user.uid && toId) acceptedUserIds.add(toId);
         if (toId === user.uid && fromId) acceptedUserIds.add(fromId);
-        // Also match by senderName if IDs not present
         const matched = allUsers.find(u => u.name.toLowerCase() === r.senderName.toLowerCase());
         if (matched) acceptedUserIds.add(matched.id);
       }
     });
 
-    // Check local storage user doc for explicit friends array
     try {
-      const uRaw = localStorage.getItem('pujo_db_users');
+      const uRaw = localStorage.getItem('pujo_db_users_v2');
       if (uRaw) {
         const uMap: Record<string, UserProfile> = JSON.parse(uRaw);
         if (uMap[user.uid]?.friends) {
@@ -150,13 +142,13 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [user, locality, coordinates]);
 
-  // 1. Send Friend Request (Linked to Real Database)
+  // 1. Send Friend Request
   const sendJoinRequest = useCallback((friend: FriendProfile, customMessage?: string) => {
     if (!user) return;
-    sendFriendRequestToDb(user, friend, customMessage, friend.sector, friend.currentPandal);
+    sendFriendRequestToDb(user, friend, customMessage);
   }, [user]);
 
-  // 2. Accept Friend Request (Tick Button clicked)
+  // 2. Accept Friend Request (Tick Button)
   const acceptRequest = useCallback((requestId: string, friendId?: string) => {
     if (!user) return;
     const req = requests.find(r => r.id === requestId);
@@ -167,12 +159,12 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [user, requests, allUsers]);
 
-  // 3. Decline Friend Request (Cross Button clicked)
+  // 3. Decline Friend Request (Cross Button)
   const declineRequest = useCallback((requestId: string) => {
     declineFriendRequestInDb(requestId);
   }, []);
 
-  // 4. Delete Friend (Unfriend option)
+  // 4. Delete Friend (Unfriend)
   const deleteFriend = useCallback((friendId: string) => {
     if (!user) return;
     deleteFriendInDb(user.uid, friendId);
@@ -196,32 +188,6 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     sendChatMessageToDb(chatId, friendId, user.uid, routeText, pandals);
   }, [user]);
 
-  // 7. Seed Simulated Devotee (For immediate testing before multiple physical devices join)
-  const addSimulatedDevotee = useCallback((name: string, pandal: string, zone?: 'north' | 'central' | 'south') => {
-    const simUid = `devotee-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
-    const simUser: UserProfile = {
-      uid: simUid,
-      displayName: name,
-      email: `${name.toLowerCase().replace(/\s+/g, '.')}.pujo@gmail.com`,
-      photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${simUid}&backgroundColor=b6e3f4,c0aede,d1d4f9`,
-      zone: zone || 'south',
-      sector: zone === 'north' ? 'Bagbazar / Shyambazar' : zone === 'central' ? 'College Street / Bowbazar' : 'Ballygunge / Gariahat',
-      currentPandal: pandal,
-      locality: 'Kolkata, WB',
-      activeRoute: [pandal, 'Maddox Square', 'Ballygunge Cultural', 'Ekdalia Evergreen'],
-      friends: [],
-      lastSeen: Date.now()
-    };
-
-    try {
-      const uRaw = localStorage.getItem('pujo_db_users');
-      const uMap: Record<string, UserProfile> = uRaw ? JSON.parse(uRaw) : {};
-      uMap[simUid] = simUser;
-      localStorage.setItem('pujo_db_users', JSON.stringify(uMap));
-      window.dispatchEvent(new Event('pujo_users_updated'));
-    } catch { /* ignore */ }
-  }, []);
-
   return (
     <SocialContext.Provider
       value={{
@@ -236,8 +202,7 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         declineRequest,
         deleteFriend,
         sendMessage,
-        shareRouteWithFriend,
-        addSimulatedDevotee
+        shareRouteWithFriend
       }}
     >
       {children}

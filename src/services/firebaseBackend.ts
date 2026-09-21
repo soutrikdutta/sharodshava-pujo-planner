@@ -1,10 +1,10 @@
 /**
  * SHARODSHAV 2026 - Real-time Firebase & User Database Backend
  * 
- * Manages live synchronization for:
- * - /users/{uid} (Google User profiles, current pandal, friends list, active route)
- * - /friend_requests/{id} (Bi-directional requests with real-time status updates)
- * - /chats/{chatId}/messages/{msgId} (Deterministic direct chats with route sharing)
+ * 100% Authentic Google Account User Data synchronized directly to Cloud Firestore:
+ * - /users/{uid} (Real Google accounts, current pandal, GPS coordinates, friend lists)
+ * - /friend_requests/{id} (Real-time friend requests with accept/reject/pending states)
+ * - /chats/{chatId}/messages/{msgId} (Deterministic direct chats with live route sharing)
  */
 
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
@@ -13,7 +13,6 @@ import {
   collection, 
   doc, 
   setDoc, 
-  addDoc, 
   updateDoc, 
   query, 
   orderBy, 
@@ -27,7 +26,7 @@ import {
 import type { AppUser } from '../context/AuthContext';
 import type { FriendProfile, FriendRequest, ChatMessage } from '../config/friendsSocialData';
 
-// Fallback / Environment Firebase Configuration
+// Production Firebase Configuration for Sharodshav 2026
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyC3ixLDhnbQ1ZU2R63uy7-EyQsaHqDpPmA',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'sharodshav-2026.firebaseapp.com',
@@ -50,14 +49,13 @@ try {
   db = getFirestore(app);
   isFirestoreAvailable = true;
 } catch (e) {
-  console.warn('[FirebaseBackend] Firestore initialization using local real-time sync layer:', e);
+  console.warn('[FirebaseBackend] Firestore initialization warning:', e);
   isFirestoreAvailable = false;
 }
 
-// Local In-Memory & LocalStorage Sync Layer (guarantees instantaneous zero-delay sync across tabs and devices)
-const STORAGE_KEY_USERS = 'pujo_db_users';
-const STORAGE_KEY_REQUESTS = 'pujo_db_requests';
-const STORAGE_KEY_CHATS = 'pujo_db_chats';
+const STORAGE_KEY_USERS = 'pujo_db_users_v2';
+const STORAGE_KEY_REQUESTS = 'pujo_db_requests_v2';
+const STORAGE_KEY_CHATS = 'pujo_db_chats_v2';
 
 export interface UserProfile {
   uid: string;
@@ -70,7 +68,7 @@ export interface UserProfile {
   locality?: string;
   coordinates?: { lat: number; lng: number };
   activeRoute?: string[];
-  friends?: string[]; // Array of friend UIDs
+  friends?: string[];
   lastSeen: number;
 }
 
@@ -80,39 +78,37 @@ export function getDeterministicChatId(uid1: string, uid2: string): string {
 }
 
 /**
- * 1. Sync / Upsert User Profile into Database (/users/{uid}) using Google Account Data
+ * 1. Sync User Profile into Cloud Firestore (/users/{uid}) with Authentic Google Profile Data
  */
 export async function syncUserProfile(
   user: AppUser,
   profileData?: Partial<UserProfile>
 ): Promise<void> {
-  const existingRaw = localStorage.getItem(STORAGE_KEY_USERS);
-  const existingMap: Record<string, UserProfile> = existingRaw ? JSON.parse(existingRaw) : {};
-  const currentSaved = existingMap[user.uid];
-
   const userPayload: UserProfile = {
     uid: user.uid,
-    displayName: user.displayName || user.email?.split('@')[0] || 'Pujo Devotee',
+    displayName: user.displayName || user.email?.split('@')[0] || 'Devotee',
     email: user.email || '',
-    photoURL: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
-    zone: profileData?.zone || currentSaved?.zone || 'south',
-    sector: profileData?.sector || currentSaved?.sector || 'Ballygunge / Gariahat',
-    currentPandal: profileData?.currentPandal || currentSaved?.currentPandal || 'Maddox Square',
-    locality: profileData?.locality || currentSaved?.locality || 'Kolkata',
-    coordinates: profileData?.coordinates || currentSaved?.coordinates,
-    activeRoute: profileData?.activeRoute || currentSaved?.activeRoute || [],
-    friends: currentSaved?.friends || [],
+    photoURL: user.photoURL || `https://lh3.googleusercontent.com/a/default-user`,
+    zone: profileData?.zone || 'south',
+    sector: profileData?.sector || 'Ballygunge / Gariahat',
+    currentPandal: profileData?.currentPandal || 'Maddox Square',
+    locality: profileData?.locality || 'Kolkata',
+    coordinates: profileData?.coordinates,
+    activeRoute: profileData?.activeRoute || [],
+    friends: profileData?.friends || [],
     lastSeen: Date.now()
   };
 
-  // 1. Sync to LocalStorage & broadcast event
+  // Sync to local cache for instant tab responsiveness
   try {
-    existingMap[user.uid] = { ...existingMap[user.uid], ...userPayload };
-    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(existingMap));
+    const raw = localStorage.getItem(STORAGE_KEY_USERS);
+    const usersMap: Record<string, UserProfile> = raw ? JSON.parse(raw) : {};
+    usersMap[user.uid] = { ...usersMap[user.uid], ...userPayload };
+    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(usersMap));
     window.dispatchEvent(new Event('pujo_users_updated'));
   } catch { /* ignore */ }
 
-  // 2. Sync to Cloud Firestore if connected
+  // Sync directly to Cloud Firestore
   if (db && isFirestoreAvailable) {
     try {
       const cleanPayload = Object.fromEntries(
@@ -124,36 +120,36 @@ export async function syncUserProfile(
         serverTimestamp: serverTimestamp()
       }, { merge: true });
     } catch (err) {
-      console.warn('[FirebaseBackend] Sync to Firestore user doc skipped (enable Firestore in console if desired):', err);
+      console.warn('[FirebaseBackend] Sync to Firestore user doc:', err);
     }
   }
 }
 
 /**
- * 2. Subscribe to All Registered Devotees in Database (Excluding Current User)
+ * 2. Subscribe to ALL Real Google Users in Cloud Firestore (Excluding Current User)
  */
 export function subscribeToAllUsers(
   currentUserId: string,
   onUpdate: (users: FriendProfile[]) => void
 ): Unsubscribe {
-  const refreshLocal = () => {
+  const refreshFromLocal = () => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_USERS);
       const usersMap: Record<string, UserProfile> = raw ? JSON.parse(raw) : {};
       const list: FriendProfile[] = Object.values(usersMap)
-        .filter(u => u.uid !== currentUserId)
+        .filter(u => u.uid !== currentUserId && !u.uid.startsWith('demo-') && !u.uid.startsWith('sim-'))
         .map(u => ({
           id: u.uid,
           name: u.displayName,
-          avatar: u.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.uid}`,
+          avatar: u.photoURL || `https://lh3.googleusercontent.com/a/default-user`,
           zone: u.zone || 'south',
           sector: u.sector || `${(u.zone || 'south').toUpperCase()} Kolkata`,
           currentPandal: u.currentPandal || 'Maddox Square',
           routeTitle: `${u.displayName}'s Pujo Squad`,
           pandalCount: u.activeRoute?.length || 4,
           status: 'at-pandal',
-          lastSeen: 'Active now',
-          mutualFriends: 6,
+          lastSeen: 'Active on Sharodshav',
+          mutualFriends: 0,
           activeRoute: u.activeRoute || [],
           coordinates: u.coordinates,
           locality: u.locality || 'Kolkata'
@@ -162,10 +158,9 @@ export function subscribeToAllUsers(
     } catch { /* ignore */ }
   };
 
-  refreshLocal();
-  const handleLocalUpdate = () => refreshLocal();
+  refreshFromLocal();
+  const handleLocalUpdate = () => refreshFromLocal();
   window.addEventListener('pujo_users_updated', handleLocalUpdate);
-  window.addEventListener('storage', handleLocalUpdate);
 
   if (db && isFirestoreAvailable) {
     try {
@@ -178,42 +173,37 @@ export function subscribeToAllUsers(
             usersList.push({
               id: data.uid,
               name: data.displayName,
-              avatar: data.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.uid}`,
+              avatar: data.photoURL || `https://lh3.googleusercontent.com/a/default-user`,
               zone: data.zone || 'south',
               sector: data.sector || 'Kolkata',
               currentPandal: data.currentPandal || 'Maddox Square',
               routeTitle: `${data.displayName}'s Pujo Squad`,
               pandalCount: data.activeRoute?.length || 4,
               status: 'at-pandal',
-              lastSeen: 'Active now',
-              mutualFriends: 6,
+              lastSeen: 'Active on Sharodshav',
+              mutualFriends: 0,
               activeRoute: data.activeRoute || [],
               coordinates: data.coordinates,
               locality: data.locality || 'Kolkata'
             });
           }
         });
-        if (usersList.length > 0) {
-          onUpdate(usersList);
-        }
+        onUpdate(usersList);
       }, (err) => {
-        console.warn('[FirebaseBackend] All users listener fallback:', err);
+        console.warn('[FirebaseBackend] Firestore all users listener:', err);
       });
+
       return () => {
         unsub();
         window.removeEventListener('pujo_users_updated', handleLocalUpdate);
-        window.removeEventListener('storage', handleLocalUpdate);
       };
     } catch {
       // fallback to local
     }
   }
 
-  const interval = setInterval(refreshLocal, 3000);
   return () => {
-    clearInterval(interval);
     window.removeEventListener('pujo_users_updated', handleLocalUpdate);
-    window.removeEventListener('storage', handleLocalUpdate);
   };
 }
 
@@ -224,25 +214,20 @@ export function subscribeToFriendRequests(
   userId: string,
   onUpdate: (requests: FriendRequest[]) => void
 ): Unsubscribe {
-  const getLocalRequests = (): FriendRequest[] => {
+  const refreshFromLocal = () => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_REQUESTS);
-      const allReqs: FriendRequest[] = raw ? JSON.parse(raw) : [];
-      return allReqs.filter(r => (r as any).fromUserId === userId || (r as any).toUserId === userId || r.type === 'sent' || r.type === 'received');
+      const allReqs: any[] = raw ? JSON.parse(raw) : [];
+      const list = allReqs.filter(r => r.fromUserId === userId || r.toUserId === userId || r.type === 'sent' || r.type === 'received');
+      onUpdate(list);
     } catch {
-      return [];
+      onUpdate([]);
     }
   };
 
-  const notify = () => {
-    const reqs = getLocalRequests();
-    onUpdate(reqs);
-  };
-
-  notify();
-  const handleReqUpdate = () => notify();
+  refreshFromLocal();
+  const handleReqUpdate = () => refreshFromLocal();
   window.addEventListener('pujo_requests_updated', handleReqUpdate);
-  window.addEventListener('storage', handleReqUpdate);
 
   if (db && isFirestoreAvailable) {
     try {
@@ -264,7 +249,7 @@ export function subscribeToFriendRequests(
               senderName: isSender ? d.toUserName : d.fromUserName,
               senderAvatar: isSender ? d.toUserAvatar : d.fromUserAvatar,
               zone: d.zone || 'Kolkata',
-              currentPandal: d.currentPandal || 'Pandal Route',
+              currentPandal: d.currentPandal || 'Pandal Trail',
               message: d.message || "Let's join Pujo hopping!",
               timestamp: d.timestamp || 'Just now',
               status: d.status || 'pending',
@@ -273,9 +258,7 @@ export function subscribeToFriendRequests(
             } as FriendRequest);
           }
         });
-        if (list.length > 0) {
-          onUpdate(list);
-        }
+        onUpdate(list);
       }, (err) => {
         console.warn('[FirebaseBackend] Friend requests listener fallback:', err);
       });
@@ -283,51 +266,45 @@ export function subscribeToFriendRequests(
       return () => {
         unsub();
         window.removeEventListener('pujo_requests_updated', handleReqUpdate);
-        window.removeEventListener('storage', handleReqUpdate);
       };
     } catch {
-      // fallback to local
+      // fallback
     }
   }
 
-  const interval = setInterval(notify, 2500);
   return () => {
-    clearInterval(interval);
     window.removeEventListener('pujo_requests_updated', handleReqUpdate);
-    window.removeEventListener('storage', handleReqUpdate);
   };
 }
 
 /**
- * 4. Send Friend Request to Database
+ * 4. Send Friend Request to Cloud Firestore
  */
 export async function sendFriendRequestToDb(
   fromUser: AppUser,
   toFriend: FriendProfile,
-  customMessage?: string,
-  zone?: string,
-  pandal?: string
+  customMessage?: string
 ): Promise<FriendRequest> {
   const reqId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
   const newReq: any = {
     id: reqId,
     fromUserId: fromUser.uid,
-    fromUserName: fromUser.displayName || fromUser.email?.split('@')[0] || 'Pujo Devotee',
-    fromUserAvatar: fromUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${fromUser.uid}`,
+    fromUserName: fromUser.displayName || fromUser.email?.split('@')[0] || 'Devotee',
+    fromUserAvatar: fromUser.photoURL || `https://lh3.googleusercontent.com/a/default-user`,
     toUserId: toFriend.id,
     toUserName: toFriend.name,
     toUserAvatar: toFriend.avatar,
     senderName: toFriend.name,
     senderAvatar: toFriend.avatar,
-    zone: zone || toFriend.sector || `${toFriend.zone} Kolkata`,
-    currentPandal: pandal || toFriend.currentPandal || 'Kolkata Pujo Trail',
-    message: customMessage || `Hey ${toFriend.name.split(' ')[0]}! Let's join routes for pandal hopping together!`,
+    zone: toFriend.sector || `${toFriend.zone} Kolkata`,
+    currentPandal: toFriend.currentPandal || 'Kolkata Pujo Trail',
+    message: customMessage || `Hey ${toFriend.name.split(' ')[0]}! Let's join pandal hopping routes together!`,
     timestamp: 'Just now',
     status: 'pending',
     type: 'sent'
   };
 
-  // 1. Save to local storage & broadcast
+  // Local storage cache update
   try {
     const raw = localStorage.getItem(STORAGE_KEY_REQUESTS);
     const list: any[] = raw ? JSON.parse(raw) : [];
@@ -336,12 +313,12 @@ export async function sendFriendRequestToDb(
     window.dispatchEvent(new Event('pujo_requests_updated'));
   } catch { /* ignore */ }
 
-  // 2. Save to Firestore
+  // Cloud Firestore document creation
   if (db && isFirestoreAvailable) {
     try {
       await setDoc(doc(db, 'friend_requests', reqId), {
         fromUserId: fromUser.uid,
-        fromUserName: fromUser.displayName || fromUser.email?.split('@')[0] || 'Pujo Devotee',
+        fromUserName: fromUser.displayName || fromUser.email?.split('@')[0] || 'Devotee',
         fromUserAvatar: fromUser.photoURL || '',
         toUserId: toFriend.id,
         toUserName: toFriend.name,
@@ -354,7 +331,7 @@ export async function sendFriendRequestToDb(
         createdAt: serverTimestamp()
       });
     } catch (err) {
-      console.warn('[FirebaseBackend] Firestore add request skipped:', err);
+      console.warn('[FirebaseBackend] Firestore add friend request:', err);
     }
   }
 
@@ -362,21 +339,20 @@ export async function sendFriendRequestToDb(
 }
 
 /**
- * 5. Accept Friend Request in Database (Tick Button clicked)
+ * 5. Accept Friend Request in Cloud Firestore (Tick Button clicked)
  */
 export async function acceptFriendRequestInDb(
   requestId: string,
   currentUserId: string,
   friendUserId: string
 ): Promise<void> {
-  // 1. Local storage update
+  // Local storage update
   try {
     const raw = localStorage.getItem(STORAGE_KEY_REQUESTS);
     const list: any[] = raw ? JSON.parse(raw) : [];
     const updated = list.map(r => r.id === requestId ? { ...r, status: 'accepted' } : r);
     localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(updated));
 
-    // Update users map with mutual friendship
     const uRaw = localStorage.getItem(STORAGE_KEY_USERS);
     if (uRaw) {
       const uMap: Record<string, UserProfile> = JSON.parse(uRaw);
@@ -393,7 +369,7 @@ export async function acceptFriendRequestInDb(
     window.dispatchEvent(new Event('pujo_users_updated'));
   } catch { /* ignore */ }
 
-  // 2. Firestore update
+  // Cloud Firestore updates
   if (db && isFirestoreAvailable) {
     try {
       const docRef = doc(db, 'friend_requests', requestId);
@@ -402,7 +378,6 @@ export async function acceptFriendRequestInDb(
         updatedAt: serverTimestamp()
       });
 
-      // Update both user docs with arrayUnion
       const meRef = doc(db, 'users', currentUserId);
       await updateDoc(meRef, {
         friends: arrayUnion(friendUserId)
@@ -413,16 +388,16 @@ export async function acceptFriendRequestInDb(
         friends: arrayUnion(currentUserId)
       });
     } catch (err) {
-      console.warn('[FirebaseBackend] Firestore accept request skipped:', err);
+      console.warn('[FirebaseBackend] Firestore accept request:', err);
     }
   }
 }
 
 /**
- * 6. Decline Friend Request in Database (Cross Button clicked)
+ * 6. Decline Friend Request in Cloud Firestore (Cross Button clicked)
  */
 export async function declineFriendRequestInDb(requestId: string): Promise<void> {
-  // 1. Local storage update
+  // Local storage update
   try {
     const raw = localStorage.getItem(STORAGE_KEY_REQUESTS);
     const list: any[] = raw ? JSON.parse(raw) : [];
@@ -431,7 +406,7 @@ export async function declineFriendRequestInDb(requestId: string): Promise<void>
     window.dispatchEvent(new Event('pujo_requests_updated'));
   } catch { /* ignore */ }
 
-  // 2. Firestore update
+  // Cloud Firestore update
   if (db && isFirestoreAvailable) {
     try {
       const docRef = doc(db, 'friend_requests', requestId);
@@ -440,19 +415,19 @@ export async function declineFriendRequestInDb(requestId: string): Promise<void>
         updatedAt: serverTimestamp()
       });
     } catch (err) {
-      console.warn('[FirebaseBackend] Firestore decline request skipped:', err);
+      console.warn('[FirebaseBackend] Firestore decline request:', err);
     }
   }
 }
 
 /**
- * 7. Delete Friend from Database (Unfriend option)
+ * 7. Delete Friend from Cloud Firestore (Unfriend)
  */
 export async function deleteFriendInDb(
   currentUserId: string,
   friendUserId: string
 ): Promise<void> {
-  // 1. Local storage update
+  // Local storage update
   try {
     const uRaw = localStorage.getItem(STORAGE_KEY_USERS);
     if (uRaw) {
@@ -466,7 +441,6 @@ export async function deleteFriendInDb(
       localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(uMap));
     }
 
-    // Remove or reset requests between these users so they can add each other again
     const rRaw = localStorage.getItem(STORAGE_KEY_REQUESTS);
     if (rRaw) {
       const rList: any[] = JSON.parse(rRaw);
@@ -481,7 +455,7 @@ export async function deleteFriendInDb(
     window.dispatchEvent(new Event('pujo_requests_updated'));
   } catch { /* ignore */ }
 
-  // 2. Firestore update
+  // Cloud Firestore arrayRemove
   if (db && isFirestoreAvailable) {
     try {
       const meRef = doc(db, 'users', currentUserId);
@@ -494,32 +468,31 @@ export async function deleteFriendInDb(
         friends: arrayRemove(currentUserId)
       });
     } catch (err) {
-      console.warn('[FirebaseBackend] Firestore delete friend skipped:', err);
+      console.warn('[FirebaseBackend] Firestore delete friend:', err);
     }
   }
 }
 
 /**
- * 8. Subscribe to Real-Time Chat Messages for a Chat Thread
+ * 8. Real-Time Chat Message Subscription
  */
 export function subscribeToChatMessages(
   chatId: string,
   onUpdate: (messages: ChatMessage[]) => void
 ): Unsubscribe {
-  const getLocalChat = (): ChatMessage[] => {
+  const refreshFromLocal = () => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_CHATS);
       const allChats: Record<string, ChatMessage[]> = raw ? JSON.parse(raw) : {};
-      return allChats[chatId] || [];
+      onUpdate(allChats[chatId] || []);
     } catch {
-      return [];
+      onUpdate([]);
     }
   };
 
-  onUpdate(getLocalChat());
-  const handleChatEvent = () => onUpdate(getLocalChat());
+  refreshFromLocal();
+  const handleChatEvent = () => refreshFromLocal();
   window.addEventListener('pujo_chats_updated', handleChatEvent);
-  window.addEventListener('storage', handleChatEvent);
 
   if (db && isFirestoreAvailable) {
     try {
@@ -540,33 +513,27 @@ export function subscribeToChatMessages(
             routeData: d.routeData
           });
         });
-        if (msgs.length > 0) {
-          onUpdate(msgs);
-        }
+        onUpdate(msgs);
       }, (err) => {
-        console.warn('[FirebaseBackend] Chat listener fallback:', err);
+        console.warn('[FirebaseBackend] Chat listener:', err);
       });
 
       return () => {
         unsub();
         window.removeEventListener('pujo_chats_updated', handleChatEvent);
-        window.removeEventListener('storage', handleChatEvent);
       };
     } catch {
       // fallback
     }
   }
 
-  const interval = setInterval(() => onUpdate(getLocalChat()), 2000);
   return () => {
-    clearInterval(interval);
     window.removeEventListener('pujo_chats_updated', handleChatEvent);
-    window.removeEventListener('storage', handleChatEvent);
   };
 }
 
 /**
- * 9. Send Direct Chat Message to Database
+ * 9. Send Direct Chat Message to Cloud Firestore
  */
 export async function sendChatMessageToDb(
   chatId: string,
@@ -589,7 +556,7 @@ export async function sendChatMessageToDb(
     } : undefined
   };
 
-  // 1. Local storage save & broadcast
+  // Local storage cache update
   try {
     const raw = localStorage.getItem(STORAGE_KEY_CHATS);
     const chatsMap: Record<string, ChatMessage[]> = raw ? JSON.parse(raw) : {};
@@ -599,11 +566,11 @@ export async function sendChatMessageToDb(
     window.dispatchEvent(new Event('pujo_chats_updated'));
   } catch { /* ignore */ }
 
-  // 2. Firestore save
+  // Cloud Firestore add document
   if (db && isFirestoreAvailable) {
     try {
       const messagesRef = collection(db, 'chats', chatId, 'messages');
-      await addDoc(messagesRef, {
+      await setDoc(doc(messagesRef, newMsg.id), {
         senderId: senderUid,
         friendId,
         sender: 'me',
@@ -614,7 +581,7 @@ export async function sendChatMessageToDb(
         createdAt: serverTimestamp()
       });
     } catch (err) {
-      console.warn('[FirebaseBackend] Firestore send message skipped:', err);
+      console.warn('[FirebaseBackend] Firestore send chat message:', err);
     }
   }
 

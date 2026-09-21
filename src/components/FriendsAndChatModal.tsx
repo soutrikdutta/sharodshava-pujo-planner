@@ -14,7 +14,8 @@ import {
   UserCheck,
   Clock,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  Copy
 } from 'lucide-react';
 import { useSocial } from '../context/SocialContext';
 import { useAuth } from '../context/AuthContext';
@@ -45,21 +46,19 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
     declineRequest, 
     deleteFriend,
     sendMessage, 
-    shareRouteWithFriend,
-    addSimulatedDevotee
+    shareRouteWithFriend
   } = useSocial();
 
   const [activeFriendId, setActiveFriendId] = useState<string>(friends[0]?.id || '');
   const [messageInput, setMessageInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
 
-  // Set active friend when friends list changes or is selected
   const currentFriend = useMemo(() => {
     return friends.find(f => f.id === activeFriendId) || friends[0] || null;
   }, [friends, activeFriendId]);
 
-  // Send message
   const handleSendMessage = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!messageInput.trim() || !currentFriend) return;
@@ -68,23 +67,25 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
     setMessageInput('');
   };
 
-  // Share active route to chat
   const handleShareRouteInChat = () => {
     if (!currentFriend) return;
     shareRouteWithFriend(currentFriend.id, activeRoutePandals);
   };
 
+  const handleCopyShareLink = () => {
+    navigator.clipboard.writeText(window.location.origin);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
   const activeChatMessages = (currentFriend ? chats[currentFriend.id] : []) || [];
   const filteredRequests = requests.filter(r => r.type === requestSubTab);
 
-  // Helper to determine relationship with any user in the Explore tab
   const getUserRelation = (targetUserId: string, targetName: string) => {
-    // 1. Is already a confirmed friend?
     if (friends.some(f => f.id === targetUserId || f.name.toLowerCase() === targetName.toLowerCase())) {
       return { status: 'friend' as const };
     }
 
-    // 2. Sent a pending request to this user?
     const sentReq = requests.find(r => 
       (r.type === 'sent' && ((r as any).toUserId === targetUserId || r.senderName.toLowerCase() === targetName.toLowerCase())) &&
       r.status === 'pending'
@@ -93,7 +94,6 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
       return { status: 'request_sent' as const, reqId: sentReq.id };
     }
 
-    // 3. Received a pending request from this user?
     const receivedReq = requests.find(r => 
       (r.type === 'received' && ((r as any).fromUserId === targetUserId || r.senderName.toLowerCase() === targetName.toLowerCase())) &&
       r.status === 'pending'
@@ -102,15 +102,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
       return { status: 'request_received' as const, reqId: receivedReq.id };
     }
 
-    // 4. Default: Can add as friend
     return { status: 'none' as const };
-  };
-
-  // Handler for adding sample test devotees if testing alone
-  const handleSeedDemoDevotees = () => {
-    addSimulatedDevotee('Ananya Sen', 'Maddox Square', 'south');
-    addSimulatedDevotee('Debraj Roy', 'Bagbazar Sarbojanin', 'north');
-    addSimulatedDevotee('Sneha Banerjee', 'College Square', 'central');
   };
 
   if (!isOpen) return null;
@@ -136,7 +128,6 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
           onClick={(e) => e.stopPropagation()}
           className="relative w-full max-w-4xl rounded-3xl glass-panel border border-white/20 p-5 sm:p-6 shadow-2xl z-10 my-auto overflow-hidden text-left max-h-[92vh] flex flex-col bg-[#0b0d13]/98"
         >
-          {/* Top highlight bar */}
           <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#d4af37]/60 to-transparent" />
           
           {/* Header */}
@@ -262,49 +253,47 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
           <div className="flex-1 overflow-y-auto py-4 min-h-[380px]">
             
             {/* ══════════════════════════════════════════════════════════════
-                TAB 1: EXPLORE DEVOTEES / ADD FRIENDS (ALL USERS DATA VISIBLE)
+                TAB 1: ADD FRIENDS (REAL GOOGLE USERS ONLY - ZERO DUMMY DATA)
                 ══════════════════════════════════════════════════════════════ */}
             {activeTab === 'explore' && (
               <div className="space-y-4">
                 
                 {/* Search Bar */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div className="relative w-full sm:max-w-md">
+                  <div className="relative w-full">
                     <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search devotees by name, locality or pandal..."
+                      placeholder="Search devotees by Google name or pandal..."
                       className="w-full pl-9 pr-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-[#d4af37] transition-colors"
                     />
                   </div>
-
-                  {allUsers.length === 0 && (
-                    <button
-                      onClick={handleSeedDemoDevotees}
-                      className="px-3 py-1.5 rounded-xl bg-[#d4af37]/20 hover:bg-[#d4af37]/30 border border-[#d4af37]/40 text-[#f4e5a9] text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
-                    >
-                      <Sparkles size={12} />
-                      <span>Simulate Devotees (For Testing)</span>
-                    </button>
-                  )}
                 </div>
 
                 {/* Devotees List */}
                 {allUsers.length === 0 ? (
-                  <div className="py-14 text-center text-white/50 space-y-3 border border-dashed border-white/10 rounded-2xl p-6">
-                    <Users size={36} className="mx-auto text-[#d4af37]/40" />
-                    <h4 className="text-sm font-bold text-white">No other devotees registered yet</h4>
-                    <p className="text-xs text-white/50 max-w-md mx-auto leading-relaxed">
-                      You are signed in as <strong>{user?.displayName || 'Devotee'}</strong>. Whenever any user signs in with Google, their profile data appears here automatically in real-time.
-                    </p>
-                    <button
-                      onClick={handleSeedDemoDevotees}
-                      className="mt-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#e6ca65] text-black font-bold text-xs shadow-lg hover:brightness-110 active:scale-95 transition-all cursor-pointer"
-                    >
-                      + Add Sample Devotee Squad
-                    </button>
+                  <div className="py-14 text-center text-white/50 space-y-4 border border-dashed border-white/10 rounded-2xl p-6 bg-white/[0.01]">
+                    <div className="w-14 h-14 rounded-2xl bg-[#d4af37]/10 border border-[#d4af37]/30 flex items-center justify-center mx-auto text-[#d4af37]">
+                      <Users size={28} />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-bold text-white">Signed in as {user?.displayName || 'Devotee'}</h4>
+                      <p className="text-xs text-white/50 max-w-md mx-auto mt-1.5 leading-relaxed">
+                        Your authentic Google profile is now synchronized in Cloud Firestore. As other devotees log in with their Google accounts on Sharodshav, they will appear here live in real-time!
+                      </p>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        onClick={handleCopyShareLink}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#e6ca65] text-black font-bold text-xs shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 mx-auto cursor-pointer"
+                      >
+                        {copiedLink ? <Check size={14} /> : <Copy size={14} />}
+                        <span>{copiedLink ? 'Copied Site Link!' : 'Share Sharodshav with Friends'}</span>
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -328,7 +317,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                                   alt={devotee.name}
                                   className="w-12 h-12 rounded-2xl object-cover border border-[#d4af37]/40 bg-black/40"
                                 />
-                                <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#0b0d13]" title="Active devotee" />
+                                <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#0b0d13]" title="Google Verified Devotee" />
                               </div>
 
                               <div className="min-w-0 space-y-0.5">
@@ -384,18 +373,18 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                                   <span>Request Sent</span>
                                 </span>
                               ) : rel.status === 'request_received' ? (
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1.5">
                                   <button
                                     onClick={() => acceptRequest(rel.reqId, devotee.id)}
                                     className="p-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold transition-all cursor-pointer shadow-md"
-                                    title="Accept Friend Request"
+                                    title="Accept Friend Request (✓)"
                                   >
                                     <Check size={14} />
                                   </button>
                                   <button
                                     onClick={() => declineRequest(rel.reqId)}
                                     className="p-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-all cursor-pointer"
-                                    title="Decline Friend Request"
+                                    title="Decline Friend Request (✕)"
                                   >
                                     <X size={14} />
                                   </button>
@@ -556,7 +545,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                         <Users size={32} className="mx-auto text-white/20" />
                         <p className="text-sm font-semibold text-white/60">No friends connected yet</p>
                         <p className="text-[11px] text-white/40 leading-relaxed">
-                          Go to <strong>Add Friends</strong> to find devotees and send requests!
+                          Go to <strong>Add Friends</strong> to find devotees who have signed in with Google and send requests!
                         </p>
                         <button
                           onClick={() => setActiveTab('explore')}
@@ -736,7 +725,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
           <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-white/40 shrink-0">
             <span className="flex items-center gap-1.5">
               <Sparkles size={13} className="text-[#d4af37]" />
-              <span>Real-time Durga Puja friend coordination powered by Firebase</span>
+              <span>Real-time Google Account Durga Puja coordination on Firebase</span>
             </span>
             <button
               onClick={onClose}
@@ -762,7 +751,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                   <div>
                     <h3 className="text-base font-bold text-white">Remove Friend?</h3>
                     <p className="text-xs text-white/60 mt-1">
-                      Are you sure you want to delete this friend from your Pujo squad? You can always add them again later.
+                      Are you sure you want to delete this friend from your Pujo squad? You can add them again anytime.
                     </p>
                   </div>
                   <div className="flex items-center justify-center gap-3 pt-2">
