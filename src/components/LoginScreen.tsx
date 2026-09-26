@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
 import { signInWithGoogle as signInWithFirebase, isFirebaseConfigured } from '../services/firebase';
 import { syncUserProfile } from '../services/firebaseBackend';
-import { processGcpCredential } from '../services/gcpAuth';
+import { processGcpCredential, signInWithGcpOAuthPopup } from '../services/gcpAuth';
 
 // Floating festive golden sparks (hardware CSS keyframe animations)
 const FESTIVE_EMBERS = [
@@ -63,34 +63,53 @@ export const LoginScreen: React.FC = () => {
     setLoginError(null);
 
     try {
-      // 1. Try Firebase Auth popup with Google provider (bypasses origin_mismatch)
+      // 1. Try Firebase Auth popup (uses client ID via Firebase handler)
       if (isFirebaseConfigured) {
-        const fbUser = await signInWithFirebase();
-        if (fbUser) {
-          try {
-            await syncUserProfile({
+        try {
+          const fbUser = await signInWithFirebase();
+          if (fbUser) {
+            try {
+              await syncUserProfile({
+                uid: fbUser.uid,
+                displayName: fbUser.displayName,
+                email: fbUser.email,
+                photoURL: fbUser.photoURL,
+                authSource: 'firebase'
+              });
+            } catch (e) {
+              console.warn('[Firestore] Registration note:', e);
+            }
+
+            setUserFromGcp({
               uid: fbUser.uid,
               displayName: fbUser.displayName,
               email: fbUser.email,
               photoURL: fbUser.photoURL,
-              authSource: 'firebase'
+              authSource: 'firebase' as any
             });
-          } catch (e) {
-            console.warn('[Firestore] Registration note:', e);
+            return;
           }
+        } catch (fbErr: any) {
+          console.warn('Firebase popup notice:', fbErr);
+          if (fbErr?.code === 'auth/popup-closed-by-user' || fbErr?.code === 'auth/cancelled-popup-request') {
+            return;
+          }
+        }
+      }
 
-          setUserFromGcp({
-            uid: fbUser.uid,
-            displayName: fbUser.displayName,
-            email: fbUser.email,
-            photoURL: fbUser.photoURL,
-            authSource: 'firebase' as any
-          });
+      // 2. Direct GCP OAuth Token popup with user's client ID
+      if (gcpClientId) {
+        const gUser = await signInWithGcpOAuthPopup(gcpClientId);
+        if (gUser) {
+          try {
+            await syncUserProfile(gUser);
+          } catch { /* ignore */ }
+          setUserFromGcp(gUser);
           return;
         }
       }
 
-      // 2. Fallback to general login
+      // 3. Fallback to general login
       await login();
     } catch (err: any) {
       console.error('Google Sign In error:', err);
