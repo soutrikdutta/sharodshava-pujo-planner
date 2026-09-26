@@ -94,6 +94,7 @@ export const LoginScreen: React.FC = () => {
           if (fbErr?.code === 'auth/popup-closed-by-user' || fbErr?.code === 'auth/cancelled-popup-request') {
             return;
           }
+          throw fbErr;
         }
       }
 
