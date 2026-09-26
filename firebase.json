@@ -1,0 +1,16 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "auth": {
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Sharodshav",
+        "supportEmail": "2006soutrik@gmail.com",
+        "authorizedRedirectUris": [
+          "https://sharodshav-two.vercel.app"
+        ]
+      }
+    }
+  }
+}

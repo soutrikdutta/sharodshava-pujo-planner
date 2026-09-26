@@ -41,6 +41,7 @@ if (isFirebaseConfigured) {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     auth = getAuth(app);
     googleProvider = new GoogleAuthProvider();
+    googleProvider.setCustomParameters({ prompt: 'select_account' });
   } catch (err) {
     console.warn('Firebase initialization error, falling back to instant preview mode:', err);
   }
