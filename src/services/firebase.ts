@@ -15,14 +15,14 @@ export interface AppUser {
   photoURL: string | null;
 }
 
-// Configurable via Vite environment variables
+// Configurable via Vite environment variables with robust production fallbacks
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || ''
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyC3ixLDhnbQ1ZU2R63uy7-EyQsaHqDpPmA',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'sharodshav-2026.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'sharodshav-2026',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'sharodshav-2026.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '372280818942',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:372280818942:web:a91e1f3e3b842a14f039af'
 };
 
 // Check whether valid Firebase credentials have been configured
