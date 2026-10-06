@@ -23,7 +23,8 @@ import {
   IndianRupee,
   ChevronDown,
   ChevronUp,
-  RotateCcw
+  RotateCcw,
+  Search
 } from 'lucide-react';
 import { 
   DURGA_PUJA_2026, 
@@ -71,24 +72,33 @@ type ZoneKey = 'north' | 'central' | 'south';
 const ZONE_RECOMMENDED_PANDALS: Record<ZoneKey, string[]> = {
   north: [
     'Bagbazar Sarbojanin',
-    'Kumartuli Park',
+    'Kumartuli Park Sarbojanin',
+    'Kumartuli Sarbojanin',
     'Tala Prattoy',
     'Hatibagan Sarbojanin',
-    'Sovabazar Rajbari'
+    'Shobhabazar Rajbari (Bonedi)',
+    'Ahiritola Sarbojanin',
+    'Kashi Bose Lane',
+    'Sreebhumi Sporting Club',
+    'Dum Dum Park Tarun Sangha'
   ],
   central: [
-    'College Square',
-    'Santosh Mitra Square (Lebutala)',
+    'College Square Sarbojanin',
+    'Santosh Mitra Square',
     'Mohammad Ali Park',
-    'Janbazar Sarbojanin (Dharmatala)'
+    'Beleghata 33 Pally',
+    'Chaltabagan Sarbojanin'
   ],
   south: [
     'Maddox Square',
-    'Ekdalia Evergreen',
+    'Ekdalia Evergreen Club',
     'Suruchi Sangha',
     'Ballygunge Cultural Association',
     'Tridhara Sammilani',
-    'Deshapriya Park'
+    'Mudiali Club',
+    'Deshapriya Park',
+    'Chetla Agrani Club',
+    'Singhi Park Sarbojanin'
   ]
 };
 
@@ -107,6 +117,7 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
   const [activeZoneWindow, setActiveZoneWindow] = useState<ZoneKey | null>(null);
   const [hoveredZone, setHoveredZone] = useState<ZoneKey | null>(null);
   const [selectedDayId, setSelectedDayId] = useState<string | 'all'>('all');
+  const [pandalSearchQuery, setPandalSearchQuery] = useState('');
   
   // Selected pandal checkboxes
   const [checkedPandalNames, setCheckedPandalNames] = useState<Set<string>>(new Set());
@@ -238,15 +249,31 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
     });
   }, [activeZoneWindow, calculateDistance]);
 
-  // Filtered by selected day if chosen
+  // Filtered by selected day and search query
   const displayedPandals = useMemo(() => {
-    if (selectedDayId === 'all') return allZonePandals;
-    const currentDay = DURGA_PUJA_2026.days.find(d => d.id === selectedDayId);
-    if (!currentDay) return allZonePandals;
-    return allZonePandals.filter(p => 
-      !p.dayName || p.dayName.toLowerCase() === currentDay.name.toLowerCase()
-    );
-  }, [allZonePandals, selectedDayId]);
+    let list = allZonePandals;
+
+    if (selectedDayId !== 'all') {
+      const currentDay = DURGA_PUJA_2026.days.find(d => d.id === selectedDayId);
+      if (currentDay) {
+        list = list.filter(p => 
+          !p.dayName || p.dayName.toLowerCase() === currentDay.name.toLowerCase()
+        );
+      }
+    }
+
+    if (pandalSearchQuery.trim()) {
+      const q = pandalSearchQuery.toLowerCase().trim();
+      list = list.filter(p => 
+        p.name.toLowerCase().includes(q) ||
+        (p.vibe && p.vibe.toLowerCase().includes(q)) ||
+        (p.address && p.address.toLowerCase().includes(q)) ||
+        (p.zone && p.zone.toLowerCase().includes(q))
+      );
+    }
+
+    return list;
+  }, [allZonePandals, selectedDayId, pandalSearchQuery]);
 
   // Toggle single pandal checkbox
   const togglePandalCheckbox = useCallback((name: string) => {
@@ -701,7 +728,10 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
               {/* Window Header with Back to Map button */}
               <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
                 <button
-                  onClick={() => setActiveZoneWindow(null)}
+                  onClick={() => {
+                    setActiveZoneWindow(null);
+                    setPandalSearchQuery('');
+                  }}
                   className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-all flex items-center gap-2 cursor-pointer border border-white/10"
                 >
                   <ArrowLeft size={14} />
@@ -769,6 +799,31 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                 </div>
               </div>
 
+              {/* Pandal Search Bar */}
+              <div className="relative shrink-0">
+                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#d4af37]" />
+                <input
+                  type="text"
+                  value={pandalSearchQuery}
+                  onChange={(e) => setPandalSearchQuery(e.target.value)}
+                  placeholder={`Search pandals in ${currentZoneInfo?.name || 'this zone'} (e.g. ${
+                    activeZoneWindow === 'north' ? 'Hatibagan, Kumartuli, Bagbazar' :
+                    activeZoneWindow === 'central' ? 'College Square, Lebutala, Mohammad Ali' :
+                    'Maddox Square, Ekdalia, Suruchi'
+                  })...`}
+                  className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-white/5 border border-white/15 text-xs sm:text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-[#d4af37] focus:bg-white/[0.08] transition-all shadow-inner"
+                />
+                {pandalSearchQuery && (
+                  <button
+                    onClick={() => setPandalSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                    title="Clear search"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
               {/* Date Filter Bar */}
               <div className="flex items-center justify-between gap-2 shrink-0">
                 <div className="flex items-center gap-1.5 text-xs text-white/60 font-medium">
@@ -812,7 +867,24 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
 
               {/* Pandals List with Checkboxes */}
               <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1 max-h-[48vh] sm:max-h-[52vh]">
-                {displayedPandals.map((place, idx) => {
+                {displayedPandals.length === 0 ? (
+                  <div className="py-12 text-center text-white/50 space-y-3 border border-dashed border-white/10 rounded-2xl p-6">
+                    <Search size={28} className="mx-auto text-white/20" />
+                    <p className="text-sm font-semibold text-white/70">
+                      No pandals found matching "{pandalSearchQuery}"
+                    </p>
+                    <p className="text-xs text-white/40">
+                      Try searching for another neighborhood or pandal name in {currentZoneInfo?.name}.
+                    </p>
+                    <button
+                      onClick={() => setPandalSearchQuery('')}
+                      className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold cursor-pointer transition-colors"
+                    >
+                      Clear Search
+                    </button>
+                  </div>
+                ) : (
+                  displayedPandals.map((place, idx) => {
                   const isChecked = checkedPandalNames.has(place.name);
 
                   return (
@@ -893,7 +965,7 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                       </div>
                     </motion.div>
                   );
-                })}
+                }))}
               </div>
 
               {/* ═══════════════════════════════════════════════════════════ */}
@@ -901,7 +973,10 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
               {/* ═══════════════════════════════════════════════════════════ */}
               <div className="sticky bottom-0 bg-[#0c0e15]/95 backdrop-blur-md pt-3 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 z-30">
                 <button
-                  onClick={() => setActiveZoneWindow(null)}
+                  onClick={() => {
+                    setActiveZoneWindow(null);
+                    setPandalSearchQuery('');
+                  }}
                   className="text-xs text-[#d4af37] hover:underline flex items-center gap-1 cursor-pointer self-start sm:self-center"
                 >
                   <ArrowLeft size={12} />

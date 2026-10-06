@@ -83,6 +83,25 @@ export const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
                 <strong className="text-white font-medium">Sharodshav</strong> is an intelligent, real-time Durga Puja festival companion designed for Kolkata. It helps devotees effortlessly discover pandals, navigate optimal transit routes, avoid peak crowd congestion, and celebrate the grand autumn carnival together.
               </p>
             </div>
+
+            {/* Creator / LinkedIn Section */}
+            <div className="mt-4 pt-4 border-t border-white/10 flex flex-col items-center text-center space-y-2.5">
+              <p className="text-xs text-white/70">
+                Created by <span className="text-[#f4e5a9] font-bold">Soutrik Dutta</span>
+              </p>
+              
+              <a
+                href="https://www.linkedin.com/in/soutrik-dutta-245b93372/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full inline-flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl bg-[#0077B5] hover:bg-[#006396] text-white text-xs font-semibold shadow-lg shadow-[#0077B5]/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer border border-sky-300/30"
+              >
+                <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
+                  <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.45a1.6 1.6 0 0 0-1.6 1.6 1.6 1.6 0 0 0 1.6 1.6 1.6 1.6 0 0 0 1.6-1.6 1.6 1.6 0 0 0-1.6-1.6Z" />
+                </svg>
+                <span>Connect on LinkedIn</span>
+              </a>
+            </div>
           </motion.div>
         </div>
       )}

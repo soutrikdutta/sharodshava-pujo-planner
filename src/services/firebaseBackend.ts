@@ -84,6 +84,58 @@ export function getDeterministicChatId(uid1: string, uid2: string): string {
 }
 
 /**
+ * Helper: Resolve a user's authentic last updated location.
+ * If never shared or if it's the old dummy default 'Maddox Square', returns 'No location found'.
+ */
+export function resolveUserLocation(data: Partial<UserProfile>): { location: string; isKnown: boolean; sector?: string } {
+  // Check if user has explicitly picked/visited a pandal
+  // Ignore legacy hardcoded default 'Maddox Square' unless user actually has it in their activeRoute
+  const isLegacyMaddox = data.currentPandal === 'Maddox Square' && (!data.activeRoute || !data.activeRoute.includes('Maddox Square'));
+
+  if (data.currentPandal && !isLegacyMaddox && data.currentPandal !== 'No location found') {
+    return {
+      location: data.currentPandal,
+      isKnown: true,
+      sector: data.sector && data.sector !== 'Ballygunge / Gariahat' ? data.sector : undefined
+    };
+  }
+
+  // Check if they shared locality from GPS (and not dummy default)
+  if (data.locality && data.locality !== 'Kolkata' && data.locality !== 'Ballygunge / Gariahat') {
+    return {
+      location: data.locality,
+      isKnown: true,
+      sector: data.sector && data.sector !== 'Ballygunge / Gariahat' ? data.sector : undefined
+    };
+  }
+
+  // Check if they have an active route with at least 1 pandal
+  if (data.activeRoute && data.activeRoute.length > 0) {
+    return {
+      location: data.activeRoute[0],
+      isKnown: true,
+      sector: data.sector && data.sector !== 'Ballygunge / Gariahat' ? data.sector : undefined
+    };
+  }
+
+  // Check if they have coordinates
+  if (data.coordinates && typeof data.coordinates.lat === 'number') {
+    return {
+      location: data.locality || `${data.coordinates.lat.toFixed(2)}°N, ${data.coordinates.lng.toFixed(2)}°E`,
+      isKnown: true,
+      sector: data.sector && data.sector !== 'Ballygunge / Gariahat' ? data.sector : undefined
+    };
+  }
+
+  // User has never shared their location
+  return {
+    location: 'No location found',
+    isKnown: false,
+    sector: undefined
+  };
+}
+
+/**
  * 1. Sync User Profile into Cloud Firestore (/users/{uid}) with Authentic Google Profile Data
  */
 export async function syncUserProfile(
@@ -96,9 +148,9 @@ export async function syncUserProfile(
     email: user.email || '',
     photoURL: user.photoURL || `https://lh3.googleusercontent.com/a/default-user`,
     zone: profileData?.zone || 'south',
-    sector: profileData?.sector || 'Ballygunge / Gariahat',
-    currentPandal: profileData?.currentPandal || 'Maddox Square',
-    locality: profileData?.locality || 'Kolkata',
+    sector: profileData?.sector,
+    currentPandal: profileData?.currentPandal,
+    locality: profileData?.locality,
     coordinates: profileData?.coordinates,
     activeRoute: profileData?.activeRoute || [],
     friends: profileData?.friends || [],
@@ -178,23 +230,26 @@ export function subscribeToAllUsers(
       const usersMap: Record<string, UserProfile> = raw ? JSON.parse(raw) : {};
       const list: FriendProfile[] = Object.values(usersMap)
         .filter(u => !isSelf(u.uid, u.email) && !u.uid.startsWith('demo-') && !u.uid.startsWith('sim-'))
-        .map(u => ({
-          id: u.uid,
-          name: u.displayName,
-          avatar: u.photoURL || `https://lh3.googleusercontent.com/a/default-user`,
-          zone: u.zone || 'south',
-          sector: u.sector || `${(u.zone || 'south').toUpperCase()} Kolkata`,
-          currentPandal: u.currentPandal || 'Maddox Square',
-          routeTitle: `${u.displayName}'s Pujo Squad`,
-          pandalCount: u.activeRoute?.length || 4,
-          status: 'at-pandal',
-          lastSeen: 'Active on Sharodshav',
-          mutualFriends: 0,
-          activeRoute: u.activeRoute || [],
-          coordinates: u.coordinates,
-          locality: u.locality || 'Kolkata',
-          email: u.email
-        }));
+        .map(u => {
+          const loc = resolveUserLocation(u);
+          return {
+            id: u.uid,
+            name: u.displayName,
+            avatar: u.photoURL || `https://lh3.googleusercontent.com/a/default-user`,
+            zone: u.zone || 'south',
+            sector: loc.sector || '',
+            currentPandal: loc.location,
+            routeTitle: `${u.displayName}'s Pujo Squad`,
+            pandalCount: u.activeRoute?.length || 0,
+            status: loc.isKnown ? 'at-pandal' : 'active',
+            lastSeen: 'Active on Sharodshav',
+            mutualFriends: 0,
+            activeRoute: u.activeRoute || [],
+            coordinates: u.coordinates,
+            locality: u.locality,
+            email: u.email
+          };
+        });
       onUpdate(list);
     } catch { /* ignore */ }
   };
@@ -211,21 +266,22 @@ export function subscribeToAllUsers(
         snapshot.forEach((docSnap) => {
           const data = docSnap.data() as UserProfile;
           if (!isSelf(data.uid, data.email) && !isSelf(docSnap.id, data.email)) {
+            const loc = resolveUserLocation(data);
             usersList.push({
               id: data.uid || docSnap.id,
               name: data.displayName,
               avatar: data.photoURL || `https://lh3.googleusercontent.com/a/default-user`,
               zone: data.zone || 'south',
-              sector: data.sector || 'Kolkata',
-              currentPandal: data.currentPandal || 'Maddox Square',
+              sector: loc.sector || '',
+              currentPandal: loc.location,
               routeTitle: `${data.displayName}'s Pujo Squad`,
-              pandalCount: data.activeRoute?.length || 4,
-              status: 'at-pandal',
+              pandalCount: data.activeRoute?.length || 0,
+              status: loc.isKnown ? 'at-pandal' : 'active',
               lastSeen: 'Active on Sharodshav',
               mutualFriends: 0,
               activeRoute: data.activeRoute || [],
               coordinates: data.coordinates,
-              locality: data.locality || 'Kolkata',
+              locality: data.locality,
               email: data.email
             });
           }
