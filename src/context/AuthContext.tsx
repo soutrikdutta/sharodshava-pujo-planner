@@ -119,6 +119,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
+  const purgeSensitiveChatCaches = () => {
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('pujo_chat_') || k.startsWith('pujo_db_requests'))) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+    } catch { /* ignore */ }
+  };
+
   const logout = useCallback(async () => {
     setLoading(true);
     try {
@@ -126,11 +139,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (isFirebaseConfigured) {
         await signOutFirebase();
       }
+      purgeSensitiveChatCaches();
       setUser(null);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      purgeSensitiveChatCaches();
+    }
+  }, [user?.uid]);
 
   return (
     <AuthContext.Provider

@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Registered devotee profiles & live locations
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // Friend requests between devotees
+    match /friend_requests/{requestId} {
+      allow read, write: if true;
+    }
+
+    // Direct 1-on-1 private chat rooms between two devotees
+    match /chats/{chatId} {
+      allow read, write: if true;
+
+      // Real-time messages within the direct chat room
+      match /messages/{messageId} {
+        allow read, write: if true;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

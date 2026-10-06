@@ -777,12 +777,32 @@ export function subscribeToChatMessages(
   const chatMessagesMap = new Map<string, ChatMessage>();
 
   const mergeAndEmit = () => {
-    const list = Array.from(chatMessagesMap.values()).sort((a, b) => {
-      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
-      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
-      if (timeA && timeB) return timeA - timeB;
-      return a.timestamp.localeCompare(b.timestamp);
-    });
+    const myCandidateUids = new Set<string>(uid1 ? getEquivalentUids(uid1) : []);
+    if (uid1) myCandidateUids.add(uid1);
+    const friendCandidateUids = new Set<string>(uid2 ? getEquivalentUids(uid2) : []);
+    if (uid2) friendCandidateUids.add(uid2);
+
+    const list = Array.from(chatMessagesMap.values())
+      .filter(m => {
+        // Enforce strict participant check at backend subscription level
+        const isFromMe = (m.senderId && myCandidateUids.has(m.senderId)) || m.sender === 'me';
+        const isFromFriend = (m.senderId && friendCandidateUids.has(m.senderId)) || m.sender === 'friend';
+        if (!isFromMe && !isFromFriend) return false;
+
+        if (m.friendId) {
+          const matchesFriend = friendCandidateUids.has(m.friendId);
+          const matchesMe = myCandidateUids.has(m.friendId);
+          if (!matchesFriend && !matchesMe) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+        if (timeA && timeB) return timeA - timeB;
+        return a.timestamp.localeCompare(b.timestamp);
+      });
 
     // Save to primary local cache
     try {

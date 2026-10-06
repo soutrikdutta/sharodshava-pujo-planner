@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useSocial } from '../context/SocialContext';
 import { useAuth } from '../context/AuthContext';
-import { getDeterministicChatId, getAllDeterministicChatIds } from '../services/firebaseBackend';
+import { getDeterministicChatId, getAllDeterministicChatIds, getEquivalentUids } from '../services/firebaseBackend';
 
 interface FriendsAndChatModalProps {
   isOpen: boolean;
@@ -93,7 +93,31 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
       uniqueMap.set(k, m);
     });
 
-    return Array.from(uniqueMap.values()).sort((a: any, b: any) => {
+    // STRICT PRIVACY BARRIER:
+    // Only messages strictly between current user and current friend can ever be processed or displayed.
+    const myCandidateUids = new Set<string>(user?.uid ? getEquivalentUids(user.uid) : []);
+    if (user?.uid) myCandidateUids.add(user.uid);
+
+    const friendCandidateUids = new Set<string>(currentFriend.id ? getEquivalentUids(currentFriend.id) : []);
+    if (currentFriend.id) friendCandidateUids.add(currentFriend.id);
+
+    const strictlyPrivateMessages = Array.from(uniqueMap.values()).filter((m: any) => {
+      // Must originate from either current user or current friend
+      const isFromMe = (m.senderId && myCandidateUids.has(m.senderId)) || m.sender === 'me';
+      const isFromFriend = (m.senderId && friendCandidateUids.has(m.senderId)) || m.sender === 'friend';
+      if (!isFromMe && !isFromFriend) return false;
+
+      // If friendId is specified on message, it must reference the counterpart
+      if (m.friendId) {
+        const matchesFriend = friendCandidateUids.has(m.friendId);
+        const matchesMe = myCandidateUids.has(m.friendId);
+        if (!matchesFriend && !matchesMe) return false;
+      }
+
+      return true;
+    });
+
+    return strictlyPrivateMessages.sort((a: any, b: any) => {
       const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
       const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
       if (timeA && timeB) return timeA - timeB;
