@@ -49,6 +49,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
   } = useSocial();
 
   const [activeFriendId, setActiveFriendId] = useState<string>('');
+  const [mobileChatView, setMobileChatView] = useState<'list' | 'chat'>('list');
   const [messageInput, setMessageInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -80,8 +81,10 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
 
   // Auto-scroll to bottom of chat
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeChatMessages.length, activeFriendId, activeTab]);
+    if (activeTab === 'chats') {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [activeChatMessages.length, activeFriendId, activeTab, mobileChatView]);
 
   const handleSendMessage = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -104,8 +107,16 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
 
   const filteredRequests = requests.filter(r => r.type === requestSubTab);
 
-  const getUserRelation = (targetUserId: string) => {
-    if (friends.some(f => f.id === targetUserId)) {
+  const getUserRelation = (targetUserId: string, targetUserEmail?: string) => {
+    // If it's the current user themselves
+    if (
+      targetUserId === user?.uid || 
+      (user?.email && targetUserEmail && user.email.toLowerCase() === targetUserEmail.toLowerCase())
+    ) {
+      return { status: 'self' as const };
+    }
+
+    if (friends.some(f => f.id === targetUserId || (user?.email && f.email && f.email.toLowerCase() === user.email.toLowerCase()))) {
       return { status: 'friend' as const };
     }
 
@@ -145,22 +156,22 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          className="relative w-full max-w-4xl bg-[#0b0d13] border border-[#d4af37]/30 rounded-3xl p-4 sm:p-6 shadow-[0_0_50px_rgba(0,0,0,0.8)] z-10 flex flex-col max-h-[90vh] overflow-hidden"
+          className="relative w-full max-w-4xl bg-[#0b0d13] border border-[#d4af37]/30 rounded-3xl p-3 sm:p-6 shadow-[0_0_50px_rgba(0,0,0,0.8)] z-10 flex flex-col h-[90vh] sm:h-[85vh] max-h-[850px] overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-white/10 shrink-0">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#d4af37]/20 to-[#d4af37]/5 border border-[#d4af37]/40 flex items-center justify-center text-[#d4af37]">
-                <Users size={20} />
+          <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-white/10 shrink-0">
+            <div className="flex items-center space-x-2.5 sm:space-x-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-[#d4af37]/20 to-[#d4af37]/5 border border-[#d4af37]/40 flex items-center justify-center text-[#d4af37] shrink-0">
+                <Users size={18} className="sm:w-5 sm:h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-1.5 sm:gap-2">
                   <span>Devotees & Friends</span>
-                  <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#d4af37]/15 text-[#f4e5a9] border border-[#d4af37]/30">
+                  <span className="text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#d4af37]/15 text-[#f4e5a9] border border-[#d4af37]/30">
                     Live Pujo Squad
                   </span>
                 </h3>
-                <p className="text-xs text-white/50">
+                <p className="text-[11px] sm:text-xs text-white/50">
                   Connect with real Google-authenticated devotees across Kolkata
                 </p>
               </div>
@@ -175,31 +186,37 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex items-center space-x-2 py-3 shrink-0">
+          <div className="flex items-center space-x-1.5 sm:space-x-2 py-2.5 sm:py-3 shrink-0">
             <button
-              onClick={() => setActiveTab('explore')}
-              className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              onClick={() => {
+                setActiveTab('explore');
+                setMobileChatView('list');
+              }}
+              className={`flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'explore'
                   ? 'bg-[#d4af37] text-black shadow-lg shadow-[#d4af37]/20'
                   : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
               }`}
             >
-              <UserPlus size={14} />
+              <UserPlus size={13} />
               <span>Add Friends ({allUsers.length})</span>
             </button>
 
             <button
-              onClick={() => setActiveTab('requests')}
-              className={`relative flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              onClick={() => {
+                setActiveTab('requests');
+                setMobileChatView('list');
+              }}
+              className={`relative flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'requests'
                   ? 'bg-[#d4af37] text-black shadow-lg shadow-[#d4af37]/20'
                   : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
               }`}
             >
-              <Users size={14} />
+              <Users size={13} />
               <span>Requests</span>
               {pendingReceivedCount > 0 && (
-                <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
+                <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-rose-500 text-white text-[9px] sm:text-[10px] font-bold flex items-center justify-center animate-pulse">
                   {pendingReceivedCount}
                 </span>
               )}
@@ -207,20 +224,20 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
 
             <button
               onClick={() => setActiveTab('chats')}
-              className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'chats'
                   ? 'bg-[#d4af37] text-black shadow-lg shadow-[#d4af37]/20'
                   : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
               }`}
             >
-              <MessageSquare size={14} />
+              <MessageSquare size={13} />
               <span>Chats ({friends.length})</span>
             </button>
           </div>
 
           {/* Sub-tab for Requests */}
           {activeTab === 'requests' && (
-            <div className="flex items-center space-x-2 pb-3 shrink-0">
+            <div className="flex items-center space-x-2 pb-2.5 shrink-0">
               <button
                 onClick={() => setRequestSubTab('received')}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
@@ -245,7 +262,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
           )}
 
           {/* Main Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto pr-1 space-y-4 py-2">
+          <div className={`flex-1 min-h-0 ${activeTab === 'chats' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto pr-1 space-y-4 py-2'}`}>
             
             {/* ══════════════════════════════════════════════════════════════
                 TAB 1: EXPLORE REAL GOOGLE DEVOTEES (ADD FRIENDS)
@@ -294,7 +311,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                         u.currentPandal.toLowerCase().includes(searchQuery.toLowerCase())
                       )
                       .map((devotee) => {
-                        const rel = getUserRelation(devotee.id);
+                        const rel = getUserRelation(devotee.id, devotee.email);
                         return (
                           <div
                             key={devotee.id}
@@ -319,11 +336,16 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                             </div>
 
                             <div className="shrink-0">
-                              {rel.status === 'friend' ? (
+                              {rel.status === 'self' ? (
+                                <span className="px-3 py-1 rounded-xl bg-white/5 text-white/40 text-xs font-medium">
+                                  You
+                                </span>
+                              ) : rel.status === 'friend' ? (
                                 <div className="flex items-center gap-1.5">
                                   <button
                                     onClick={() => {
                                       setActiveFriendId(devotee.id);
+                                      setMobileChatView('chat');
                                       setActiveTab('chats');
                                     }}
                                     className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
@@ -463,14 +485,17 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                           </>
                         ) : req.status === 'accepted' ? (
                           <div className="flex items-center gap-2">
-                            <span className="px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1">
+                            <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1">
                               <Check size={13} />
                               <span>Friends</span>
                             </span>
                             <button
                               onClick={() => {
                                 const targetUid = req.fromUserId === user?.uid ? req.toUserId : req.fromUserId;
-                                if (targetUid) setActiveFriendId(targetUid);
+                                if (targetUid) {
+                                  setActiveFriendId(targetUid);
+                                  setMobileChatView('chat');
+                                }
                                 setActiveTab('chats');
                               }}
                               className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-medium cursor-pointer"
@@ -491,15 +516,17 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
             )}
 
             {/* ══════════════════════════════════════════════════════════════
-                TAB 3: LIVE CHATS (ISOLATED, HIGH VISIBILITY, LEFT/RIGHT)
+                TAB 3: LIVE CHATS (RESPONSIVE SPLIT / DEDICATED MOBILE SCREEN)
                 ══════════════════════════════════════════════════════════════ */}
             {activeTab === 'chats' && (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-full">
+              <div className="flex-1 min-h-0 flex flex-col md:grid md:grid-cols-12 gap-3 h-full">
                 
-                {/* Friends List Column */}
-                <div className="md:col-span-4 flex flex-col space-y-2 border-r border-white/10 pr-2">
+                {/* Friends List Column (Hidden on mobile if viewing active chat) */}
+                <div className={`md:col-span-4 flex flex-col h-full border-b md:border-b-0 md:border-r border-white/10 pr-0 md:pr-3 min-h-0 ${
+                  mobileChatView === 'chat' ? 'hidden md:flex' : 'flex'
+                }`}>
                   {friends.length > 0 && (
-                    <div className="relative mb-1">
+                    <div className="relative mb-2 shrink-0">
                       <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
                       <input
                         type="text"
@@ -511,7 +538,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                     </div>
                   )}
 
-                  <div className="space-y-1.5 overflow-y-auto max-h-[380px] pr-1">
+                  <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 min-h-0">
                     {friends.length === 0 ? (
                       <div className="py-12 text-center text-white/40 space-y-3 border border-dashed border-white/10 rounded-2xl px-4">
                         <Users size={32} className="mx-auto text-white/20" />
@@ -534,8 +561,11 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                           return (
                             <div
                               key={friend.id}
-                              onClick={() => setActiveFriendId(friend.id)}
-                              className={`p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-between group ${
+                              onClick={() => {
+                                setActiveFriendId(friend.id);
+                                setMobileChatView('chat');
+                              }}
+                              className={`p-2.5 rounded-2xl transition-all cursor-pointer flex items-center justify-between group ${
                                 isSelected
                                   ? 'bg-[#d4af37]/15 border border-[#d4af37]/40 shadow-sm'
                                   : 'bg-white/[0.02] hover:bg-white/[0.06] border border-transparent'
@@ -580,8 +610,10 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                   </div>
                 </div>
 
-                {/* Chat Conversation Column */}
-                <div className="md:col-span-8 flex flex-col justify-between h-[420px] pl-1">
+                {/* Chat Conversation Column (Full width on mobile when open) */}
+                <div className={`md:col-span-8 flex flex-col h-full min-h-0 pl-0 md:pl-2 ${
+                  mobileChatView === 'list' ? 'hidden md:flex' : 'flex flex-1'
+                }`}>
                   
                   {!currentFriend ? (
                     <div className="h-full flex flex-col items-center justify-center text-center text-white/40 space-y-3 py-8">
@@ -593,13 +625,21 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                     </div>
                   ) : (
                     <>
-                      {/* Chat Top Banner with Delete Friend Option */}
+                      {/* Chat Top Banner with Back on Mobile & Delete Option */}
                       <div className="flex items-center justify-between pb-2.5 border-b border-white/10 shrink-0">
                         <div className="flex items-center space-x-2.5 min-w-0">
+                          {/* Mobile Back Button to friend list */}
+                          <button
+                            onClick={() => setMobileChatView('list')}
+                            className="md:hidden px-2 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-white/80 text-xs font-semibold cursor-pointer shrink-0"
+                          >
+                            ← Back
+                          </button>
+
                           <img
                             src={currentFriend.avatar}
                             alt={currentFriend.name}
-                            className="w-9 h-9 rounded-xl object-cover border border-[#d4af37]/40"
+                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-cover border border-[#d4af37]/40 shrink-0"
                           />
                           <div className="min-w-0">
                             <h4 className="text-xs sm:text-sm font-bold text-white truncate">{currentFriend.name}</h4>
@@ -610,7 +650,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           {/* Share Route */}
                           <button
                             onClick={handleShareRouteInChat}
@@ -633,7 +673,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                       </div>
 
                       {/* Message Bubbles Scroll Area */}
-                      <div className="flex-1 overflow-y-auto space-y-3 py-3 pr-1">
+                      <div className="flex-1 overflow-y-auto space-y-3 py-3 pr-1 min-h-0">
                         {activeChatMessages.length === 0 ? (
                           <div className="h-full flex flex-col items-center justify-center text-center text-white/40 space-y-2 py-8">
                             <MessageSquare size={32} className="text-white/20" />
@@ -648,8 +688,11 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                             const isMe = msg.senderId ? msg.senderId === user?.uid : msg.sender === 'me';
 
                             return (
-                              <div
+                              <motion.div
                                 key={msg.id}
+                                initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ duration: 0.18, ease: "easeOut" }}
                                 className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}
                               >
                                 {/* Left Avatar for Friend */}
@@ -661,14 +704,14 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                                   />
                                 )}
 
-                                <div className={`max-w-[78%] sm:max-w-[72%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm leading-relaxed shadow-lg ${
+                                <div className={`max-w-[80%] sm:max-w-[72%] rounded-2xl px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm leading-relaxed shadow-lg ${
                                   isMe
                                     ? 'bg-gradient-to-r from-[#d4af37] to-[#e6ca65] text-black font-medium rounded-br-none shadow-[0_3px_12px_rgba(212,175,55,0.25)]'
                                     : 'bg-[#181b26] border border-white/20 text-white font-normal rounded-bl-none shadow-[0_3px_12px_rgba(0,0,0,0.5)]'
                                 }`}>
                                   {/* Friend Name Label on incoming message */}
                                   {!isMe && (
-                                    <span className="block text-[10px] font-bold text-[#d4af37] mb-1">
+                                    <span className="block text-[10px] font-bold text-[#d4af37] mb-0.5">
                                       {msg.senderName || currentFriend.name.split(' ')[0]}
                                     </span>
                                   )}
@@ -716,7 +759,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                                     className="w-7 h-7 rounded-full object-cover border border-[#d4af37]/60 shrink-0 mb-1"
                                   />
                                 )}
-                              </div>
+                              </motion.div>
                             );
                           })
                         )}
@@ -730,14 +773,14 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                           value={messageInput}
                           onChange={(e) => setMessageInput(e.target.value)}
                           placeholder={`Type a message to ${currentFriend.name.split(' ')[0]}...`}
-                          className="flex-1 px-4 py-2.5 rounded-xl bg-white/5 border border-white/15 text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#d4af37]"
+                          className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-white/5 border border-white/15 text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#d4af37]"
                         />
                         <button
                           type="submit"
                           disabled={!messageInput.trim()}
-                          className="p-2.5 rounded-xl bg-[#d4af37] text-black hover:bg-[#e6ca65] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-md shrink-0"
+                          className="p-2 sm:p-2.5 rounded-xl bg-[#d4af37] text-black hover:bg-[#e6ca65] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-md shrink-0"
                         >
-                          <Send size={16} />
+                          <Send size={15} />
                         </button>
                       </form>
                     </>
@@ -753,8 +796,6 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
           {/* Footer */}
           <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-white/40 shrink-0">
             <span className="flex items-center gap-1.5">
-              <Sparkles size={13} className="text-[#d4af37]" />
-              <span>Real-time Google Account Durga Puja coordination on Firebase</span>
             </span>
             <button
               onClick={onClose}
