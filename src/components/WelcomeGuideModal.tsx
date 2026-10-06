@@ -129,6 +129,9 @@ export const WelcomeGuideModal: React.FC<WelcomeGuideModalProps> = ({
   const isLast = currentStepIndex === GUIDE_STEPS.length - 1;
 
   const handleFinish = () => {
+    try {
+      localStorage.setItem('pujo_guide_seen_device', 'true');
+    } catch { /* ignore */ }
     onClose();
     if (onOpenMap) onOpenMap();
   };
@@ -157,7 +160,12 @@ export const WelcomeGuideModal: React.FC<WelcomeGuideModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose}
+          onClick={() => {
+            try {
+              localStorage.setItem('pujo_guide_seen_device', 'true');
+            } catch { /* ignore */ }
+            onClose();
+          }}
           className="absolute inset-0 bg-black/85 backdrop-blur-md"
         />
 
@@ -181,13 +189,23 @@ export const WelcomeGuideModal: React.FC<WelcomeGuideModalProps> = ({
 
             <div className="flex items-center gap-2">
               <button
-                onClick={onClose}
+                onClick={() => {
+                  try {
+                    localStorage.setItem('pujo_guide_seen_device', 'true');
+                  } catch { /* ignore */ }
+                  onClose();
+                }}
                 className="text-xs text-white/40 hover:text-white transition-colors cursor-pointer px-2 py-1 rounded-lg"
               >
                 Skip Tour
               </button>
               <button
-                onClick={onClose}
+                onClick={() => {
+                  try {
+                    localStorage.setItem('pujo_guide_seen_device', 'true');
+                  } catch { /* ignore */ }
+                  onClose();
+                }}
                 className="p-1.5 rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X size={16} />

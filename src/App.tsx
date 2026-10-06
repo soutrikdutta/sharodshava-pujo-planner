@@ -54,19 +54,30 @@ const DashboardContent: React.FC = () => {
   // Selected Day from the Day Selector
   const [selectedDay, setSelectedDay] = useState<FestivalDay | null>(null);
 
-  // Check if first-time user for welcome guide
+  // Check if first-time user for welcome guide (strictly once per user)
   useEffect(() => {
     if (user) {
-      const guideKey = `pujo_guide_seen_${user.uid}`;
-      const seen = localStorage.getItem(guideKey);
-      if (!seen) {
+      const guideKeyUid = `pujo_guide_seen_${user.uid}`;
+      const guideKeyEmail = user.email ? `pujo_guide_seen_${user.email.toLowerCase().trim()}` : null;
+      const seenUid = localStorage.getItem(guideKeyUid);
+      const seenEmail = guideKeyEmail ? localStorage.getItem(guideKeyEmail) : null;
+      const seenDevice = localStorage.getItem('pujo_guide_seen_device');
+
+      if (!seenUid && !seenEmail && !seenDevice) {
+        // Mark it as seen immediately so re-renders or page refreshes never re-trigger it
+        try {
+          localStorage.setItem(guideKeyUid, 'true');
+          if (guideKeyEmail) localStorage.setItem(guideKeyEmail, 'true');
+          localStorage.setItem('pujo_guide_seen_device', 'true');
+        } catch { /* ignore */ }
+
         const timer = setTimeout(() => {
           setIsGuideModalOpen(true);
-        }, 800);
+        }, 1200);
         return () => clearTimeout(timer);
       }
     }
-  }, [user]);
+  }, [user?.uid, user?.email]);
 
   // Auto-detect joinTeam URL query param on page load
   useEffect(() => {
@@ -173,6 +184,17 @@ const DashboardContent: React.FC = () => {
     setIsPlanTripOpen(false);
     setSimulatedDate(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCloseGuide = () => {
+    try {
+      if (user) {
+        localStorage.setItem(`pujo_guide_seen_${user.uid}`, 'true');
+        if (user.email) localStorage.setItem(`pujo_guide_seen_${user.email.toLowerCase().trim()}`, 'true');
+      }
+      localStorage.setItem('pujo_guide_seen_device', 'true');
+    } catch { /* ignore */ }
+    setIsGuideModalOpen(false);
   };
 
   if (loading) {
@@ -361,9 +383,9 @@ const DashboardContent: React.FC = () => {
         {/* Welcome & First Time User Walkthrough Guide */}
         <WelcomeGuideModal
           isOpen={isGuideModalOpen}
-          onClose={() => setIsGuideModalOpen(false)}
+          onClose={handleCloseGuide}
           onOpenMap={() => {
-            setIsGuideModalOpen(false);
+            handleCloseGuide();
             setIsSitePickerOpen(true);
           }}
         />

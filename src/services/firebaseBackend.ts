@@ -61,9 +61,67 @@ const KNOWN_UID_ALIASES: Record<string, string[]> = {
   'mA36I31MRTgddd2ykiXH0b5vlp72': ['112352330910615785622']
 };
 
-export function getEquivalentUids(uid: string): string[] {
-  const aliases = KNOWN_UID_ALIASES[uid] || [];
-  return Array.from(new Set([uid, ...aliases]));
+// In-memory dynamic map of email -> Set of UIDs, and UID -> Set of Aliases
+const emailToUidsMap = new Map<string, Set<string>>();
+const uidToAliasesMap = new Map<string, Set<string>>();
+
+// Pre-seed known aliases
+Object.entries(KNOWN_UID_ALIASES).forEach(([k, list]) => {
+  if (!uidToAliasesMap.has(k)) uidToAliasesMap.set(k, new Set([k]));
+  list.forEach(item => {
+    uidToAliasesMap.get(k)!.add(item);
+    if (!uidToAliasesMap.has(item)) uidToAliasesMap.set(item, new Set([item, k]));
+    else uidToAliasesMap.get(item)!.add(k);
+  });
+});
+
+export function registerUserUidEmail(uid: string, email?: string | null) {
+  if (!uid) return;
+  if (!uidToAliasesMap.has(uid)) uidToAliasesMap.set(uid, new Set([uid]));
+  else uidToAliasesMap.get(uid)!.add(uid);
+
+  if (email && email.trim()) {
+    const lowerEmail = email.trim().toLowerCase();
+    if (!emailToUidsMap.has(lowerEmail)) {
+      emailToUidsMap.set(lowerEmail, new Set([uid]));
+    } else {
+      const existingUids = emailToUidsMap.get(lowerEmail)!;
+      existingUids.add(uid);
+      // Link all existing UIDs for this email as mutual aliases
+      existingUids.forEach(u1 => {
+        if (!uidToAliasesMap.has(u1)) uidToAliasesMap.set(u1, new Set([u1]));
+        existingUids.forEach(u2 => uidToAliasesMap.get(u1)!.add(u2));
+      });
+    }
+  }
+}
+
+export function getEquivalentUids(uid: string, email?: string | null): string[] {
+  const set = new Set<string>([uid]);
+  if (KNOWN_UID_ALIASES[uid]) {
+    KNOWN_UID_ALIASES[uid].forEach(a => set.add(a));
+  }
+  if (uidToAliasesMap.has(uid)) {
+    uidToAliasesMap.get(uid)!.forEach(a => set.add(a));
+  }
+  if (email && email.trim()) {
+    const lowerEmail = email.trim().toLowerCase();
+    if (emailToUidsMap.has(lowerEmail)) {
+      emailToUidsMap.get(lowerEmail)!.forEach(u => set.add(u));
+    }
+    try {
+      const raw = localStorage.getItem('pujo_db_users_v2');
+      if (raw) {
+        const uMap: Record<string, any> = JSON.parse(raw);
+        Object.values(uMap).forEach((u: any) => {
+          if (u.email && u.email.trim().toLowerCase() === lowerEmail) {
+            set.add(u.uid);
+          }
+        });
+      }
+    } catch { /* ignore */ }
+  }
+  return Array.from(set);
 }
 
 // Helper: All deterministic Chat IDs across any potential alias UIDs
@@ -167,6 +225,8 @@ export async function syncUserProfile(
   user: AppUser,
   profileData?: Partial<UserProfile>
 ): Promise<void> {
+  registerUserUidEmail(user.uid, user.email);
+
   const userPayload: UserProfile = {
     uid: user.uid,
     displayName: user.displayName || user.email?.split('@')[0] || 'Devotee',
@@ -220,7 +280,9 @@ export function subscribeToCurrentUserProfile(
       const userRef = doc(db, 'users', userId);
       const unsub = onSnapshot(userRef, (snap) => {
         if (snap.exists()) {
-          onUpdate(snap.data() as UserProfile);
+          const data = snap.data() as UserProfile;
+          if (data.email) registerUserUidEmail(userId, data.email);
+          onUpdate(data);
         } else {
           onUpdate(null);
         }
@@ -237,15 +299,21 @@ export function subscribeToCurrentUserProfile(
 
 /**
  * 3. Subscribe to ALL Real Google Users in Cloud Firestore (Excluding Current User)
+ * Automatically deduplicates multi-device entries by Google email so devotees see clean cards.
  */
 export function subscribeToAllUsers(
   currentUserId: string,
   onUpdate: (users: FriendProfile[]) => void,
   currentUserEmail?: string | null
 ): Unsubscribe {
+  if (currentUserEmail) registerUserUidEmail(currentUserId, currentUserEmail);
+
+  const myUids = new Set<string>(getEquivalentUids(currentUserId, currentUserEmail));
+  const myEmail = currentUserEmail ? currentUserEmail.trim().toLowerCase() : null;
+
   const isSelf = (uid: string, email?: string) => {
-    if (uid === currentUserId) return true;
-    if (currentUserEmail && email && email.toLowerCase() === currentUserEmail.toLowerCase()) return true;
+    if (myUids.has(uid)) return true;
+    if (myEmail && email && email.trim().toLowerCase() === myEmail) return true;
     return false;
   };
 
@@ -253,11 +321,15 @@ export function subscribeToAllUsers(
     try {
       const raw = localStorage.getItem(STORAGE_KEY_USERS);
       const usersMap: Record<string, UserProfile> = raw ? JSON.parse(raw) : {};
-      const list: FriendProfile[] = Object.values(usersMap)
+      const devoteesByEmail = new Map<string, FriendProfile>();
+      const devoteesWithoutEmail: FriendProfile[] = [];
+
+      Object.values(usersMap)
         .filter(u => !isSelf(u.uid, u.email) && !u.uid.startsWith('demo-') && !u.uid.startsWith('sim-'))
-        .map(u => {
+        .forEach(u => {
+          registerUserUidEmail(u.uid, u.email);
           const loc = resolveUserLocation(u);
-          return {
+          const prof: FriendProfile = {
             id: u.uid,
             name: u.displayName,
             avatar: u.photoURL || `https://lh3.googleusercontent.com/a/default-user`,
@@ -274,8 +346,23 @@ export function subscribeToAllUsers(
             locality: u.locality,
             email: u.email
           };
+
+          if (u.email) {
+            const k = u.email.trim().toLowerCase();
+            const existing = devoteesByEmail.get(k);
+            if (!existing) {
+              devoteesByEmail.set(k, prof);
+            } else {
+              const preferNew = (prof.id.length > 25 && existing.id.length <= 25) ||
+                (prof.currentPandal !== 'No location found' && existing.currentPandal === 'No location found');
+              if (preferNew) devoteesByEmail.set(k, { ...existing, ...prof });
+            }
+          } else {
+            devoteesWithoutEmail.push(prof);
+          }
         });
-      onUpdate(list);
+
+      onUpdate([...Array.from(devoteesByEmail.values()), ...devoteesWithoutEmail]);
     } catch { /* ignore */ }
   };
 
@@ -287,13 +374,18 @@ export function subscribeToAllUsers(
     try {
       const q = query(collection(db, 'users'));
       const unsub = onSnapshot(q, (snapshot) => {
-        const usersList: FriendProfile[] = [];
+        const devoteesByEmail = new Map<string, FriendProfile>();
+        const devoteesWithoutEmail: FriendProfile[] = [];
+
         snapshot.forEach((docSnap) => {
           const data = docSnap.data() as UserProfile;
-          if (!isSelf(data.uid, data.email) && !isSelf(docSnap.id, data.email)) {
+          const uid = data.uid || docSnap.id;
+          registerUserUidEmail(uid, data.email);
+
+          if (!isSelf(uid, data.email) && !isSelf(docSnap.id, data.email)) {
             const loc = resolveUserLocation(data);
-            usersList.push({
-              id: data.uid || docSnap.id,
+            const prof: FriendProfile = {
+              id: uid,
               name: data.displayName,
               avatar: data.photoURL || `https://lh3.googleusercontent.com/a/default-user`,
               zone: data.zone || 'south',
@@ -308,9 +400,25 @@ export function subscribeToAllUsers(
               coordinates: data.coordinates,
               locality: data.locality,
               email: data.email
-            });
+            };
+
+            if (data.email) {
+              const k = data.email.trim().toLowerCase();
+              const existing = devoteesByEmail.get(k);
+              if (!existing) {
+                devoteesByEmail.set(k, prof);
+              } else {
+                const preferNew = (prof.id.length > 25 && existing.id.length <= 25) ||
+                  (prof.currentPandal !== 'No location found' && existing.currentPandal === 'No location found');
+                if (preferNew) devoteesByEmail.set(k, { ...existing, ...prof });
+              }
+            } else {
+              devoteesWithoutEmail.push(prof);
+            }
           }
         });
+
+        const usersList: FriendProfile[] = [...Array.from(devoteesByEmail.values()), ...devoteesWithoutEmail];
         onUpdate(usersList);
       }, (err) => {
         console.warn('[FirebaseBackend] Firestore all users listener:', err);
@@ -332,16 +440,32 @@ export function subscribeToAllUsers(
 
 /**
  * 4. Subscribe to Real-Time Friend Requests for Current User
+ * Supports cross-device UID aliases & Google email matching for 100% reliable visibility.
  */
 export function subscribeToFriendRequests(
   userId: string,
-  onUpdate: (requests: FriendRequest[]) => void
+  onUpdate: (requests: FriendRequest[]) => void,
+  userEmail?: string | null
 ): Unsubscribe {
   const refreshFromLocal = () => {
     try {
+      const myUids = new Set<string>(getEquivalentUids(userId, userEmail));
+      const myEmail = userEmail ? userEmail.trim().toLowerCase() : null;
+
       const raw = localStorage.getItem(STORAGE_KEY_REQUESTS);
       const allReqs: any[] = raw ? JSON.parse(raw) : [];
-      const list = allReqs.filter(r => r.fromUserId === userId || r.toUserId === userId);
+      const list = allReqs.filter(r => {
+        const isSender = myUids.has(r.fromUserId) || (myEmail && r.fromUserEmail && r.fromUserEmail.toLowerCase() === myEmail);
+        const isReceiver = myUids.has(r.toUserId) || (myEmail && r.toUserEmail && r.toUserEmail.toLowerCase() === myEmail);
+        if (
+          r.fromUserId === r.toUserId ||
+          (r.fromUserEmail && r.toUserEmail && r.fromUserEmail.toLowerCase() === r.toUserEmail.toLowerCase()) ||
+          (isSender && isReceiver)
+        ) {
+          return false;
+        }
+        return isSender || isReceiver;
+      });
       onUpdate(list);
     } catch {
       onUpdate([]);
@@ -354,28 +478,38 @@ export function subscribeToFriendRequests(
 
   if (db && isFirestoreAvailable) {
     try {
-      const q = query(
-        collection(db, 'friend_requests'),
-        orderBy('createdAt', 'desc')
-      );
+      // Query without order constraint to ensure no documents are dropped by Firestore if createdAt is pending
+      const q = query(collection(db, 'friend_requests'));
 
       const unsub = onSnapshot(q, (snapshot) => {
+        const myUids = new Set<string>(getEquivalentUids(userId, userEmail));
+        const myEmail = userEmail ? userEmail.trim().toLowerCase() : null;
+
         const list: FriendRequest[] = [];
         snapshot.forEach((docSnap) => {
           const d = docSnap.data();
-          const isSender = d.fromUserId === userId;
-          const isReceiver = d.toUserId === userId;
+
+          const isSender = myUids.has(d.fromUserId) || (myEmail && d.fromUserEmail && d.fromUserEmail.toLowerCase() === myEmail);
+          const isReceiver = myUids.has(d.toUserId) || (myEmail && d.toUserEmail && d.toUserEmail.toLowerCase() === myEmail);
 
           // Strictly ignore any self-requests
-          if (d.fromUserId === d.toUserId) return;
+          if (
+            d.fromUserId === d.toUserId ||
+            (d.fromUserEmail && d.toUserEmail && d.fromUserEmail.toLowerCase() === d.toUserEmail.toLowerCase()) ||
+            (isSender && isReceiver)
+          ) {
+            return;
+          }
 
           if (isSender || isReceiver) {
             list.push({
               id: docSnap.id,
               fromUserId: d.fromUserId,
+              fromUserEmail: d.fromUserEmail || undefined,
               toUserId: d.toUserId,
-              senderName: isSender ? d.toUserName : d.fromUserName,
-              senderAvatar: isSender ? d.toUserAvatar : d.fromUserAvatar,
+              toUserEmail: d.toUserEmail || undefined,
+              senderName: isSender ? (d.toUserName || 'Devotee') : (d.fromUserName || 'Devotee'),
+              senderAvatar: isSender ? (d.toUserAvatar || 'https://lh3.googleusercontent.com/a/default-user') : (d.fromUserAvatar || 'https://lh3.googleusercontent.com/a/default-user'),
               zone: d.zone || 'Kolkata',
               currentPandal: d.currentPandal || 'Pandal Trail',
               message: d.message || "Let's join Pujo hopping!",
@@ -385,6 +519,9 @@ export function subscribeToFriendRequests(
             });
           }
         });
+
+        // Deterministic sort: newest requests first
+        list.sort((a, b) => b.id.localeCompare(a.id));
         onUpdate(list);
       }, (err) => {
         console.warn('[FirebaseBackend] Friend requests listener:', err);
@@ -415,7 +552,7 @@ export async function sendFriendRequestToDb(
   // CRITICAL GUARD: Prevent sending request to oneself
   if (
     fromUser.uid === toFriend.id ||
-    (fromUser.email && toFriend.email && fromUser.email.toLowerCase() === toFriend.email.toLowerCase())
+    (fromUser.email && toFriend.email && fromUser.email.trim().toLowerCase() === toFriend.email.trim().toLowerCase())
   ) {
     console.warn('[FirebaseBackend] Blocked attempt to send friend request to oneself!');
     throw new Error('You cannot send a friend request to your own account.');
@@ -428,7 +565,9 @@ export async function sendFriendRequestToDb(
   const newReq: FriendRequest = {
     id: reqId,
     fromUserId: fromUser.uid,
+    fromUserEmail: fromUser.email || undefined,
     toUserId: toFriend.id,
+    toUserEmail: toFriend.email || undefined,
     senderName: toFriend.name,
     senderAvatar: toFriend.avatar,
     zone: toFriend.sector || `${toFriend.zone} Kolkata`,
@@ -453,9 +592,11 @@ export async function sendFriendRequestToDb(
     try {
       await setDoc(doc(db, 'friend_requests', reqId), {
         fromUserId: fromUser.uid,
+        fromUserEmail: fromUser.email || null,
         fromUserName: senderName,
         fromUserAvatar: senderAvatar,
         toUserId: toFriend.id,
+        toUserEmail: toFriend.email || null,
         toUserName: toFriend.name,
         toUserAvatar: toFriend.avatar,
         zone: newReq.zone,
@@ -504,7 +645,7 @@ export async function acceptFriendRequestInDb(
     window.dispatchEvent(new Event('pujo_users_updated'));
   } catch { /* ignore */ }
 
-  // Cloud Firestore updates
+  // Cloud Firestore updates across all candidate UIDs
   if (db && isFirestoreAvailable) {
     try {
       const docRef = doc(db, 'friend_requests', requestId);
@@ -513,15 +654,26 @@ export async function acceptFriendRequestInDb(
         updatedAt: serverTimestamp()
       });
 
-      const meRef = doc(db, 'users', currentUserId);
-      await updateDoc(meRef, {
-        friends: arrayUnion(friendUserId)
-      });
+      const myUids = getEquivalentUids(currentUserId);
+      const friendUids = getEquivalentUids(friendUserId);
 
-      const friendRef = doc(db, 'users', friendUserId);
-      await updateDoc(friendRef, {
-        friends: arrayUnion(currentUserId)
-      });
+      for (const mUid of myUids) {
+        try {
+          const meRef = doc(db, 'users', mUid);
+          await updateDoc(meRef, {
+            friends: arrayUnion(...friendUids)
+          });
+        } catch { /* doc might not exist */ }
+      }
+
+      for (const fUid of friendUids) {
+        try {
+          const friendRef = doc(db, 'users', fUid);
+          await updateDoc(friendRef, {
+            friends: arrayUnion(...myUids)
+          });
+        } catch { /* doc might not exist */ }
+      }
     } catch (err) {
       console.warn('[FirebaseBackend] Firestore accept request:', err);
     }

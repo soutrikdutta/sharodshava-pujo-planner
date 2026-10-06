@@ -140,19 +140,27 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
       return { status: 'self' as const };
     }
 
-    if (friends.some(f => f.id === targetUserId)) {
+    const targetLowerEmail = targetEmail?.trim().toLowerCase();
+
+    if (friends.some(f => f.id === targetUserId || (targetLowerEmail && f.email && f.email.trim().toLowerCase() === targetLowerEmail))) {
       return { status: 'friend' as const };
     }
 
     const sentReq = requests.find(r => 
-      r.type === 'sent' && r.toUserId === targetUserId && r.status === 'pending'
+      r.type === 'sent' && r.status === 'pending' && (
+        r.toUserId === targetUserId ||
+        (targetLowerEmail && r.toUserEmail && r.toUserEmail.trim().toLowerCase() === targetLowerEmail)
+      )
     );
     if (sentReq) {
       return { status: 'request_sent' as const, reqId: sentReq.id };
     }
 
     const receivedReq = requests.find(r => 
-      r.type === 'received' && r.fromUserId === targetUserId && r.status === 'pending'
+      r.type === 'received' && r.status === 'pending' && (
+        r.fromUserId === targetUserId ||
+        (targetLowerEmail && r.fromUserEmail && r.fromUserEmail.trim().toLowerCase() === targetLowerEmail)
+      )
     );
     if (receivedReq) {
       return { status: 'request_received' as const, reqId: receivedReq.id };

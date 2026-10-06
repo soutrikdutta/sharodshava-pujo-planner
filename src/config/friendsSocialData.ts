@@ -22,7 +22,9 @@ export interface FriendProfile {
 export interface FriendRequest {
   id: string;
   fromUserId?: string;
+  fromUserEmail?: string;
   toUserId?: string;
+  toUserEmail?: string;
   senderName: string;
   senderAvatar: string;
   zone: string;

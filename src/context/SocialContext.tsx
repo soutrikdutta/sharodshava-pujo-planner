@@ -88,11 +88,15 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!user?.uid) return;
     const unsub = subscribeToFriendRequests(user.uid, (dbRequests) => {
       // Filter out any self requests
-      const cleanReqs = dbRequests.filter(r => r.fromUserId !== user.uid || r.toUserId !== user.uid);
+      const cleanReqs = dbRequests.filter(r => {
+        if (r.fromUserId === user.uid && r.toUserId === user.uid) return false;
+        if (user.email && r.fromUserEmail && r.toUserEmail && r.fromUserEmail.toLowerCase() === user.email.toLowerCase()) return false;
+        return true;
+      });
       setRequests(cleanReqs);
-    });
+    }, user.email);
     return () => unsub();
-  }, [user?.uid]);
+  }, [user?.uid, user?.email]);
 
   // Compute confirmed Friends strictly based on Firestore user document friends & accepted requests
   const friends = useMemo(() => {
@@ -113,11 +117,11 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
     }
 
-    // 2. Verified accepted friend requests matching ANY of current user's UIDs
+    // 2. Verified accepted friend requests matching ANY of current user's UIDs or email
     requests.forEach(r => {
       if (r.status === 'accepted') {
-        const fromIsMe = myUids.has(r.fromUserId || '');
-        const toIsMe = myUids.has(r.toUserId || '');
+        const fromIsMe = myUids.has(r.fromUserId || '') || Boolean(user.email && r.fromUserEmail && r.fromUserEmail.toLowerCase() === user.email.toLowerCase());
+        const toIsMe = myUids.has(r.toUserId || '') || Boolean(user.email && r.toUserEmail && r.toUserEmail.toLowerCase() === user.email.toLowerCase());
         if (fromIsMe && r.toUserId && !myUids.has(r.toUserId)) acceptedUserIds.add(r.toUserId);
         if (toIsMe && r.fromUserId && !myUids.has(r.fromUserId)) acceptedUserIds.add(r.fromUserId);
       }
