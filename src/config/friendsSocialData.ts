@@ -11,6 +11,7 @@ export interface FriendProfile {
   lastSeen: string;
   mutualFriends: number;
   phoneOrHandle?: string;
+  email?: string;
   activeRoute?: string[];
   coordinates?: { lat: number; lng: number };
   locality?: string;
