@@ -6,8 +6,6 @@ import {
   Sparkles, 
   Send, 
   CheckCircle2, 
-  FileText, 
-  Settings2, 
   Building2, 
   Flame,
   AlertCircle
@@ -45,11 +43,6 @@ export const SuggestPandalModal: React.FC<SuggestPandalModalProps> = ({
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Optional custom Google Docs Webhook URL setup toggle
-  const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzsezk8_sn2fBT6nUZyhbK57j3Wp62_MtIK-EohhFz0CCoBXV9tUsHwYbTMwoMLxIdYZQ/exec';
-  const [showDocsSettings, setShowDocsSettings] = useState(false);
-  const [webhookUrl, setWebhookUrl] = useState(() => localStorage.getItem('pujo_docs_webhook_url') || DEFAULT_WEBHOOK_URL);
-
   // Reset or initialize on open
   useEffect(() => {
     if (isOpen) {
@@ -60,15 +53,6 @@ export const SuggestPandalModal: React.FC<SuggestPandalModalProps> = ({
       setErrorMessage(null);
     }
   }, [isOpen, defaultZone, user]);
-
-  const handleSaveWebhook = () => {
-    if (webhookUrl.trim()) {
-      localStorage.setItem('pujo_docs_webhook_url', webhookUrl.trim());
-    } else {
-      localStorage.removeItem('pujo_docs_webhook_url');
-    }
-    setShowDocsSettings(false);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -301,49 +285,6 @@ export const SuggestPandalModal: React.FC<SuggestPandalModalProps> = ({
                       className="w-full px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-white/30"
                     />
                   </div>
-                </div>
-
-                {/* Google Docs Integration Footer / Settings Toggle */}
-                <div className="pt-2 border-t border-white/10">
-                  <div className="flex items-center justify-between text-[11px] text-white/50">
-                    <div className="flex items-center gap-1.5">
-                      <FileText size={12} className="text-sky-400" />
-                      <span>Syncs directly to <strong>Google Docs</strong></span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowDocsSettings(!showDocsSettings)}
-                      className="text-white/40 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
-                      title="Google Apps Script Webhook Settings"
-                    >
-                      <Settings2 size={12} />
-                      <span>{showDocsSettings ? 'Hide Settings' : 'Docs Webhook'}</span>
-                    </button>
-                  </div>
-
-                  {showDocsSettings && (
-                    <div className="mt-2.5 p-3 rounded-xl bg-black/40 border border-white/10 space-y-2">
-                      <p className="text-[10px] text-white/60 leading-relaxed">
-                        To receive submissions in Google Docs, paste your <strong>Google Apps Script Web App URL</strong> below:
-                      </p>
-                      <div className="flex gap-2">
-                        <input
-                          type="url"
-                          value={webhookUrl}
-                          onChange={(e) => setWebhookUrl(e.target.value)}
-                          placeholder="https://script.google.com/macros/s/.../exec"
-                          className="flex-1 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/15 text-[11px] text-white font-mono placeholder:text-white/20 focus:outline-none focus:border-[#d4af37]"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleSaveWebhook}
-                          className="px-3 py-1.5 rounded-lg bg-[#d4af37]/20 border border-[#d4af37]/40 text-[#f4e5a9] text-[11px] font-semibold hover:bg-[#d4af37]/30 cursor-pointer"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Submit Action Button */}

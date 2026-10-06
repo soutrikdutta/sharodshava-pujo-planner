@@ -13,7 +13,8 @@ import {
   Trash2,
   Share2,
   Copy,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft
 } from 'lucide-react';
 import { useSocial } from '../context/SocialContext';
 import { useAuth } from '../context/AuthContext';
@@ -179,22 +180,22 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          className="relative w-full max-w-4xl bg-[#0b0d13] border border-[#d4af37]/30 rounded-3xl p-4 sm:p-6 shadow-[0_0_50px_rgba(0,0,0,0.8)] z-10 flex flex-col max-h-[90vh] overflow-hidden"
+          className="relative w-full max-w-4xl bg-[#0b0d13] border border-[#d4af37]/30 rounded-2xl sm:rounded-3xl p-2.5 sm:p-6 shadow-[0_0_50px_rgba(0,0,0,0.8)] z-10 flex flex-col h-[94vh] sm:h-auto sm:max-h-[90vh] overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-white/10 shrink-0">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#d4af37]/20 to-[#d4af37]/5 border border-[#d4af37]/40 flex items-center justify-center text-[#d4af37]">
-                <Users size={20} />
+          <div className="flex items-center justify-between pb-2.5 sm:pb-4 border-b border-white/10 shrink-0">
+            <div className="flex items-center space-x-2.5 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#d4af37]/20 to-[#d4af37]/5 border border-[#d4af37]/40 flex items-center justify-center text-[#d4af37] shrink-0">
+                <Users size={18} className="sm:w-5 sm:h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <h3 className="text-sm sm:text-lg font-bold text-white flex items-center gap-1.5 sm:gap-2">
                   <span>Devotees & Friends</span>
-                  <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#d4af37]/15 text-[#f4e5a9] border border-[#d4af37]/30">
-                    Live Pujo Squad
+                  <span className="text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold px-1.5 sm:px-2 py-0.5 rounded-full bg-[#d4af37]/15 text-[#f4e5a9] border border-[#d4af37]/30">
+                    Live Squad
                   </span>
                 </h3>
-                <p className="text-xs text-white/50">
+                <p className="hidden sm:block text-xs text-white/50">
                   Connect with real Google-authenticated devotees across Kolkata
                 </p>
               </div>
@@ -202,38 +203,48 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
+              className="p-1.5 sm:p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
             >
               <X size={18} />
             </button>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex items-center space-x-2 py-3 shrink-0">
+          {/* Navigation Tabs - Modern Segmented Control for Mobile & Desktop */}
+          <div className="grid grid-cols-3 gap-1 sm:gap-2 py-2 shrink-0 bg-white/[0.03] p-1 rounded-xl sm:rounded-2xl border border-white/5 my-1">
             <button
-              onClick={() => setActiveTab('explore')}
-              className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              onClick={() => {
+                setActiveTab('explore');
+                setMobileChatView('list');
+              }}
+              className={`flex items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'explore'
-                  ? 'bg-[#d4af37] text-black shadow-lg shadow-[#d4af37]/20'
-                  : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+                  ? 'bg-[#d4af37] text-black shadow-lg shadow-[#d4af37]/20 font-bold'
+                  : 'text-white/70 hover:bg-white/10 hover:text-white'
               }`}
             >
-              <UserPlus size={14} />
-              <span>Add Friends ({allUsers.length})</span>
+              <UserPlus size={14} className="shrink-0" />
+              <span className="truncate">
+                <span className="inline sm:hidden">Add</span>
+                <span className="hidden sm:inline">Add Friends</span>
+                {allUsers.length > 0 && <span className="opacity-80"> ({allUsers.length})</span>}
+              </span>
             </button>
 
             <button
-              onClick={() => setActiveTab('requests')}
-              className={`relative flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              onClick={() => {
+                setActiveTab('requests');
+                setMobileChatView('list');
+              }}
+              className={`relative flex items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'requests'
-                  ? 'bg-[#d4af37] text-black shadow-lg shadow-[#d4af37]/20'
-                  : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+                  ? 'bg-[#d4af37] text-black shadow-lg shadow-[#d4af37]/20 font-bold'
+                  : 'text-white/70 hover:bg-white/10 hover:text-white'
               }`}
             >
-              <Users size={14} />
-              <span>Requests</span>
+              <Users size={14} className="shrink-0" />
+              <span className="truncate">Requests</span>
               {pendingReceivedCount > 0 && (
-                <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
+                <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-rose-500 text-white text-[9px] sm:text-[10px] font-bold flex items-center justify-center animate-pulse shrink-0">
                   {pendingReceivedCount}
                 </span>
               )}
@@ -241,25 +252,27 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
 
             <button
               onClick={() => setActiveTab('chats')}
-              className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'chats'
-                  ? 'bg-[#d4af37] text-black shadow-lg shadow-[#d4af37]/20'
-                  : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+                  ? 'bg-[#d4af37] text-black shadow-lg shadow-[#d4af37]/20 font-bold'
+                  : 'text-white/70 hover:bg-white/10 hover:text-white'
               }`}
             >
-              <MessageSquare size={14} />
-              <span>Chats ({friends.length})</span>
+              <MessageSquare size={14} className="shrink-0" />
+              <span className="truncate">
+                Chats{friends.length > 0 && <span className="opacity-80"> ({friends.length})</span>}
+              </span>
             </button>
           </div>
 
           {/* Sub-tab for Requests */}
           {activeTab === 'requests' && (
-            <div className="flex items-center space-x-2 pb-3 shrink-0">
+            <div className="flex items-center space-x-2 pb-2 shrink-0">
               <button
                 onClick={() => setRequestSubTab('received')}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                   requestSubTab === 'received'
-                    ? 'bg-white/20 text-white'
+                    ? 'bg-white/20 text-white font-semibold'
                     : 'bg-white/5 text-white/50 hover:text-white'
                 }`}
               >
@@ -269,7 +282,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                 onClick={() => setRequestSubTab('sent')}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                   requestSubTab === 'sent'
-                    ? 'bg-white/20 text-white'
+                    ? 'bg-white/20 text-white font-semibold'
                     : 'bg-white/5 text-white/50 hover:text-white'
                 }`}
               >
@@ -337,28 +350,28 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                         return (
                           <div
                             key={devotee.id}
-                            className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-[#d4af37]/30 transition-all flex items-center justify-between gap-3 shadow-sm"
+                            className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-white/[0.03] border border-white/10 hover:border-[#d4af37]/30 transition-all flex items-center justify-between gap-2.5 shadow-sm"
                           >
-                            <div className="flex items-center space-x-3 min-w-0">
+                            <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
                               <img
                                 src={devotee.avatar}
                                 alt={devotee.name}
-                                className="w-11 h-11 rounded-2xl object-cover border border-[#d4af37]/40 shrink-0 bg-black/40"
+                                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl object-cover border border-[#d4af37]/40 shrink-0 bg-black/40"
                                 referrerPolicy="no-referrer"
                               />
                               <div className="min-w-0">
                                 <h4 className="text-xs sm:text-sm font-bold text-white truncate">{devotee.name}</h4>
-                                <div className="flex items-center gap-1.5 text-[11px] pt-0.5">
+                                <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] pt-0.5">
                                   <MapPin 
                                     size={11} 
                                     className={hasLocation ? "text-[#d4af37] shrink-0" : "text-white/30 shrink-0"} 
                                   />
-                                  <span className={`truncate ${hasLocation ? "text-white/70 font-medium" : "text-white/40 italic"}`}>
+                                  <span className={`truncate max-w-[130px] sm:max-w-[200px] ${hasLocation ? "text-white/70 font-medium" : "text-white/40 italic"}`}>
                                     {devotee.currentPandal || 'No location found'}
                                   </span>
                                 </div>
                                 {hasLocation && devotee.sector && devotee.sector !== 'Ballygunge / Gariahat' && (
-                                  <span className="inline-block mt-1 px-1.5 py-0.2 rounded text-[9px] font-medium bg-white/5 text-white/60 border border-white/10">
+                                  <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded text-[9px] font-medium bg-white/5 text-white/60 border border-white/10 truncate max-w-[140px]">
                                     {devotee.sector}
                                   </span>
                                 )}
@@ -367,47 +380,48 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
 
                             <div className="shrink-0">
                               {rel.status === 'self' ? (
-                                <span className="px-3 py-1.5 rounded-xl bg-white/10 text-white/40 text-xs font-semibold">
+                                <span className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white/10 text-white/40 text-[11px] sm:text-xs font-semibold">
                                   You
                                 </span>
                               ) : rel.status === 'friend' ? (
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1 sm:gap-1.5">
                                   <button
                                     onClick={() => {
                                       setActiveFriendId(devotee.id);
                                       setMobileChatView('chat');
                                       setActiveTab('chats');
                                     }}
-                                    className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                                    className="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                                   >
                                     <MessageSquare size={12} />
                                     <span>Chat</span>
                                   </button>
                                   <button
                                     onClick={() => setConfirmDeleteId(devotee.id)}
-                                    className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition-colors cursor-pointer"
+                                    className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition-colors cursor-pointer"
                                     title="Delete / Unfriend"
                                   >
                                     <Trash2 size={13} />
                                   </button>
                                 </div>
                               ) : rel.status === 'request_sent' ? (
-                                <span className="px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-1">
-                                  <Sparkles size={12} />
-                                  <span>Request Sent</span>
+                                <span className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] sm:text-xs font-semibold flex items-center gap-1">
+                                  <Sparkles size={11} />
+                                  <span className="inline sm:hidden">Sent</span>
+                                  <span className="hidden sm:inline">Request Sent</span>
                                 </span>
                               ) : rel.status === 'request_received' && rel.reqId ? (
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1 sm:gap-1.5">
                                   <button
                                     onClick={() => acceptRequest(rel.reqId, devotee.id)}
-                                    className="p-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold transition-all cursor-pointer"
+                                    className="p-1.5 rounded-lg sm:rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold transition-all cursor-pointer"
                                     title="Accept Friend Request (✓)"
                                   >
                                     <Check size={14} />
                                   </button>
                                   <button
                                     onClick={() => declineRequest(rel.reqId)}
-                                    className="p-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-all cursor-pointer"
+                                    className="p-1.5 rounded-lg sm:rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-all cursor-pointer"
                                     title="Decline Friend Request (✕)"
                                   >
                                     <X size={14} />
@@ -416,10 +430,11 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                               ) : (
                                 <button
                                   onClick={() => sendJoinRequest(devotee)}
-                                  className="px-3.5 py-1.5 rounded-xl bg-[#d4af37] hover:bg-[#e6ca65] text-black font-bold text-xs transition-all flex items-center gap-1 cursor-pointer shadow-[0_0_12px_rgba(212,175,55,0.3)] hover:scale-105 active:scale-95"
+                                  className="px-2.5 sm:px-3.5 py-1.5 rounded-lg sm:rounded-xl bg-[#d4af37] hover:bg-[#e6ca65] text-black font-bold text-xs transition-all flex items-center gap-1 cursor-pointer shadow-[0_0_12px_rgba(212,175,55,0.3)] hover:scale-105 active:scale-95"
                                 >
                                   <UserPlus size={13} />
-                                  <span>Add Friend</span>
+                                  <span className="inline sm:hidden">Add</span>
+                                  <span className="hidden sm:inline">Add Friend</span>
                                 </button>
                               )}
                             </div>
@@ -549,10 +564,10 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                 TAB 3: LIVE CHATS (ISOLATED, HIGH VISIBILITY, LEFT/RIGHT)
                 ══════════════════════════════════════════════════════════════ */}
             {activeTab === 'chats' && (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 flex-1 min-h-0 h-full">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-2 sm:gap-4 flex-1 min-h-0 h-full overflow-hidden">
                 
                 {/* Friends List Column (Hidden on mobile if viewing active chat) */}
-                <div className={`md:col-span-4 flex flex-col space-y-2 border-r border-white/10 pr-2 h-full min-h-0 ${
+                <div className={`md:col-span-4 flex flex-col space-y-2 border-r border-white/10 pr-0 md:pr-2 h-full min-h-0 ${
                   mobileChatView === 'chat' ? 'hidden md:flex' : 'flex'
                 }`}>
                   {friends.length > 0 && (
@@ -649,7 +664,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                 </div>
 
                 {/* Chat Conversation Column (Full width on mobile when chat open) */}
-                <div className={`md:col-span-8 flex flex-col justify-between h-[480px] md:h-full min-h-0 pl-1 ${
+                <div className={`md:col-span-8 flex flex-col justify-between h-full min-h-0 pl-0 md:pl-2 ${
                   mobileChatView === 'list' ? 'hidden md:flex' : 'flex'
                 }`}>
                   
@@ -664,23 +679,27 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                   ) : (
                     <>
                       {/* Chat Top Banner with Delete Friend Option & Mobile Back Button */}
-                      <div className="flex items-center justify-between pb-2.5 border-b border-white/10 shrink-0 gap-2">
-                        <div className="flex items-center space-x-2 sm:space-x-2.5 min-w-0">
-                          {/* Back button for mobile */}
+                      <div className="flex items-center justify-between pb-2 border-b border-white/10 shrink-0 gap-2">
+                        <div className="flex items-center space-x-2 min-w-0">
+                          {/* Sleek Back button for mobile */}
                           <button
                             onClick={() => setMobileChatView('list')}
-                            className="md:hidden px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[#f4e5a9] text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+                            className="md:hidden p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-[#f4e5a9] text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
                             title="Back to devotees list"
                           >
-                            <span>← Back</span>
+                            <ArrowLeft size={14} />
+                            <span className="text-[11px] font-bold">List</span>
                           </button>
 
-                          <img
-                            src={currentFriend.avatar}
-                            alt={currentFriend.name}
-                            className="w-9 h-9 rounded-xl object-cover border border-[#d4af37]/40 shrink-0"
-                            referrerPolicy="no-referrer"
-                          />
+                          <div className="relative shrink-0">
+                            <img
+                              src={currentFriend.avatar}
+                              alt={currentFriend.name}
+                              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-cover border border-[#d4af37]/40 shrink-0"
+                              referrerPolicy="no-referrer"
+                            />
+                            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-[#0b0d13]" />
+                          </div>
                           <div className="min-w-0">
                             <h4 className="text-xs sm:text-sm font-bold text-white truncate">{currentFriend.name}</h4>
                             <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
@@ -690,11 +709,11 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                           {/* Share Route */}
                           <button
                             onClick={handleShareRouteInChat}
-                            className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-[#d4af37]/20 to-[#d4af37]/10 hover:from-[#d4af37]/30 hover:to-[#d4af37]/20 border border-[#d4af37]/40 text-[#f4e5a9] text-xs font-medium transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+                            className="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-gradient-to-r from-[#d4af37]/20 to-[#d4af37]/10 hover:from-[#d4af37]/30 hover:to-[#d4af37]/20 border border-[#d4af37]/40 text-[#f4e5a9] text-xs font-medium transition-all flex items-center gap-1 cursor-pointer shadow-sm"
                             title="Share your live Puja itinerary to this chat"
                           >
                             <Share2 size={12} />
@@ -704,7 +723,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                           {/* Delete Friend */}
                           <button
                             onClick={() => setConfirmDeleteId(currentFriend.id)}
-                            className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs transition-colors cursor-pointer"
+                            className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs transition-colors cursor-pointer"
                             title="Delete / Unfriend"
                           >
                             <Trash2 size={13} />
@@ -809,20 +828,20 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                       </div>
 
                       {/* Chat Input Bar */}
-                      <form onSubmit={handleSendMessage} className="flex items-center gap-2 pt-2 border-t border-white/10 shrink-0">
+                      <form onSubmit={handleSendMessage} className="flex items-center gap-1.5 sm:gap-2 pt-2 border-t border-white/10 shrink-0">
                         <input
                           type="text"
                           value={messageInput}
                           onChange={(e) => setMessageInput(e.target.value)}
                           placeholder={`Type a message to ${currentFriend.name.split(' ')[0]}...`}
-                          className="flex-1 px-4 py-2.5 rounded-xl bg-white/5 border border-white/15 text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#d4af37]"
+                          className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-white/5 border border-white/15 text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#d4af37]"
                         />
                         <button
                           type="submit"
                           disabled={!messageInput.trim()}
-                          className="p-2.5 rounded-xl bg-[#d4af37] text-black hover:bg-[#e6ca65] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-md shrink-0"
+                          className="p-2 sm:p-2.5 rounded-xl bg-[#d4af37] text-black hover:bg-[#e6ca65] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-md shrink-0"
                         >
-                          <Send size={16} />
+                          <Send size={15} />
                         </button>
                       </form>
                     </>
@@ -835,13 +854,15 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
 
           </div>
 
-          {/* Footer */}
-          <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-white/40 shrink-0">
+          {/* Footer - hidden on mobile when actively chatting to maximize keyboard & chat space */}
+          <div className={`pt-2 sm:pt-3 border-t border-white/10 flex items-center justify-between text-xs text-white/40 shrink-0 ${
+            activeTab === 'chats' && mobileChatView === 'chat' ? 'hidden md:flex' : 'flex'
+          }`}>
             <span className="flex items-center gap-1.5">
             </span>
             <button
               onClick={onClose}
-              className="px-4 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+              className="px-4 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors cursor-pointer"
             >
               Done
             </button>
