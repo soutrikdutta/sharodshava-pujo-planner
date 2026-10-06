@@ -46,8 +46,9 @@ export const SuggestPandalModal: React.FC<SuggestPandalModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Optional custom Google Docs Webhook URL setup toggle
+  const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzsezk8_sn2fBT6nUZyhbK57j3Wp62_MtIK-EohhFz0CCoBXV9tUsHwYbTMwoMLxIdYZQ/exec';
   const [showDocsSettings, setShowDocsSettings] = useState(false);
-  const [webhookUrl, setWebhookUrl] = useState(() => localStorage.getItem('pujo_docs_webhook_url') || '');
+  const [webhookUrl, setWebhookUrl] = useState(() => localStorage.getItem('pujo_docs_webhook_url') || DEFAULT_WEBHOOK_URL);
 
   // Reset or initialize on open
   useEffect(() => {

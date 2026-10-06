@@ -832,8 +832,9 @@ export async function submitPandalSuggestionToDb(suggestion: PandalSuggestion): 
     }
   }
 
-  // 3. Forward to Google Docs / Google Apps Script Webhook if configured
-  const webhookUrl = (import.meta as any).env?.VITE_GOOGLE_DOCS_WEBHOOK_URL || localStorage.getItem('pujo_docs_webhook_url');
+  // 3. Forward to Google Docs / Google Apps Script Webhook
+  const DEFAULT_DOCS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzsezk8_sn2fBT6nUZyhbK57j3Wp62_MtIK-EohhFz0CCoBXV9tUsHwYbTMwoMLxIdYZQ/exec';
+  const webhookUrl = (import.meta as any).env?.VITE_GOOGLE_DOCS_WEBHOOK_URL || localStorage.getItem('pujo_docs_webhook_url') || DEFAULT_DOCS_WEBHOOK_URL;
   if (webhookUrl) {
     try {
       await fetch(webhookUrl, {
