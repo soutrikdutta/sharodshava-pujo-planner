@@ -163,14 +163,21 @@ export function subscribeToCurrentUserProfile(
  */
 export function subscribeToAllUsers(
   currentUserId: string,
-  onUpdate: (users: FriendProfile[]) => void
+  onUpdate: (users: FriendProfile[]) => void,
+  currentUserEmail?: string | null
 ): Unsubscribe {
+  const isSelf = (uid: string, email?: string) => {
+    if (uid === currentUserId) return true;
+    if (currentUserEmail && email && email.toLowerCase() === currentUserEmail.toLowerCase()) return true;
+    return false;
+  };
+
   const refreshFromLocal = () => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_USERS);
       const usersMap: Record<string, UserProfile> = raw ? JSON.parse(raw) : {};
       const list: FriendProfile[] = Object.values(usersMap)
-        .filter(u => u.uid !== currentUserId && !u.uid.startsWith('demo-') && !u.uid.startsWith('sim-'))
+        .filter(u => !isSelf(u.uid, u.email) && !u.uid.startsWith('demo-') && !u.uid.startsWith('sim-'))
         .map(u => ({
           id: u.uid,
           name: u.displayName,
@@ -185,7 +192,8 @@ export function subscribeToAllUsers(
           mutualFriends: 0,
           activeRoute: u.activeRoute || [],
           coordinates: u.coordinates,
-          locality: u.locality || 'Kolkata'
+          locality: u.locality || 'Kolkata',
+          email: u.email
         }));
       onUpdate(list);
     } catch { /* ignore */ }
@@ -202,9 +210,9 @@ export function subscribeToAllUsers(
         const usersList: FriendProfile[] = [];
         snapshot.forEach((docSnap) => {
           const data = docSnap.data() as UserProfile;
-          if (data.uid !== currentUserId) {
+          if (!isSelf(data.uid, data.email) && !isSelf(docSnap.id, data.email)) {
             usersList.push({
-              id: data.uid,
+              id: data.uid || docSnap.id,
               name: data.displayName,
               avatar: data.photoURL || `https://lh3.googleusercontent.com/a/default-user`,
               zone: data.zone || 'south',
@@ -217,7 +225,8 @@ export function subscribeToAllUsers(
               mutualFriends: 0,
               activeRoute: data.activeRoute || [],
               coordinates: data.coordinates,
-              locality: data.locality || 'Kolkata'
+              locality: data.locality || 'Kolkata',
+              email: data.email
             });
           }
         });
@@ -276,6 +285,9 @@ export function subscribeToFriendRequests(
           const isSender = d.fromUserId === userId;
           const isReceiver = d.toUserId === userId;
 
+          // Strictly ignore any self-requests
+          if (d.fromUserId === d.toUserId) return;
+
           if (isSender || isReceiver) {
             list.push({
               id: docSnap.id,
@@ -319,6 +331,15 @@ export async function sendFriendRequestToDb(
   toFriend: FriendProfile,
   customMessage?: string
 ): Promise<FriendRequest> {
+  // CRITICAL GUARD: Prevent sending request to oneself
+  if (
+    fromUser.uid === toFriend.id ||
+    (fromUser.email && toFriend.email && fromUser.email.toLowerCase() === toFriend.email.toLowerCase())
+  ) {
+    console.warn('[FirebaseBackend] Blocked attempt to send friend request to oneself!');
+    throw new Error('You cannot send a friend request to your own account.');
+  }
+
   const reqId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
   const senderName = fromUser.displayName || fromUser.email?.split('@')[0] || 'Devotee';
   const senderAvatar = fromUser.photoURL || `https://lh3.googleusercontent.com/a/default-user`;
