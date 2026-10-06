@@ -237,7 +237,7 @@ export const FestivalHero: React.FC<FestivalHeroProps> = ({
                   <div className="flex flex-col items-start text-left">
                     <span className="text-xs sm:text-sm font-bold tracking-tight text-white group-hover:text-[#f4e5a9] transition-colors flex items-center gap-1.5">
                       <span>Choose the site</span>
-                      <MapPin size={13} className="text-[#d4af37] animate-pulse" />
+                      <MapPin size={13} className="text-[#d4af37]" />
                     </span>
                     <span className="text-[10px] sm:text-[11px] text-white/60 tracking-normal font-light">
                       Select North, Central or South on Map

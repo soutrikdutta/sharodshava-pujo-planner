@@ -178,9 +178,9 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const onPosSuccess = (position: GeolocationPosition) => {
       const coords: UserCoordinates = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        accuracy: position.coords.accuracy,
+        latitude: Number(position.coords.latitude.toFixed(5)),
+        longitude: Number(position.coords.longitude.toFixed(5)),
+        accuracy: Math.round(position.coords.accuracy),
       };
       setCoordinates(coords);
       setPermissionState('granted');
@@ -211,7 +211,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       { enableHighAccuracy: true, timeout: 6000, maximumAge: 15000 }
     );
 
-    // Continuous watchPosition to refine coordinates when moving
+    // Continuous watchPosition to refine coordinates when moving (with deadband filter to prevent jitter)
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
     }
@@ -219,15 +219,30 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       watchIdRef.current = navigator.geolocation.watchPosition(
         (pos) => {
           if (!isManualLocation) {
-            setCoordinates({
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-              accuracy: pos.coords.accuracy
+            setCoordinates((prevCoords) => {
+              if (prevCoords) {
+                // Deadband filter: Only update state if moved by at least ~30 meters (0.0003 deg)
+                // This eliminates GPS sensor noise and stops Google Map / UI pin jitter!
+                const latDiff = Math.abs(pos.coords.latitude - prevCoords.latitude);
+                const lngDiff = Math.abs(pos.coords.longitude - prevCoords.longitude);
+                if (latDiff < 0.0003 && lngDiff < 0.0003) {
+                  return prevCoords; // Bail out of React re-render completely!
+                }
+              }
+              const newCoords: UserCoordinates = {
+                latitude: Number(pos.coords.latitude.toFixed(5)),
+                longitude: Number(pos.coords.longitude.toFixed(5)),
+                accuracy: Math.round(pos.coords.accuracy)
+              };
+              try {
+                localStorage.setItem(STORAGE_COORDS, JSON.stringify(newCoords));
+              } catch { /* ignore */ }
+              return newCoords;
             });
           }
         },
         () => {},
-        { enableHighAccuracy: true, maximumAge: 20000 }
+        { enableHighAccuracy: true, maximumAge: 30000 }
       );
     } catch { /* ignore */ }
   }, [determineLocality, isManualLocation]);

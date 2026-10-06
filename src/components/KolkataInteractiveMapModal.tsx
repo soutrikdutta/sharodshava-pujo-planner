@@ -366,10 +366,13 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
       }`;
     }
 
-    const embedOrigin = coordinates
-      ? `${coordinates.latitude},${coordinates.longitude}`
-      : `${orderedPandals[0].lat},${orderedPandals[0].lng}`;
-    const embedMapUrl = `https://maps.google.com/maps?q=${embedOrigin}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
+    // Google Maps Embed URL for In-App Navigation Preview
+    // Center embed map on the target pandal destination so the red pin is rock-solid and never fluctuates
+    const targetPandal = orderedPandals.length > 0 ? orderedPandals[0] : null;
+    const embedOrigin = targetPandal
+      ? `${targetPandal.lat},${targetPandal.lng}`
+      : (coordinates ? `${coordinates.latitude.toFixed(3)},${coordinates.longitude.toFixed(3)}` : '22.5726,88.3639');
+    const embedMapUrl = `https://maps.google.com/maps?q=${embedOrigin}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
 
     return {
       orderedPandals,

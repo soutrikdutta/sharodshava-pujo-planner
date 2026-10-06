@@ -59,7 +59,7 @@ export const LocationBanner: React.FC<LocationBannerProps> = ({ onOpenNearbyModa
             {permissionState === 'denied' ? (
               <AlertCircle size={16} className="text-rose-400 shrink-0" />
             ) : (
-              <MapPin size={16} className="text-[#d4af37] animate-bounce shrink-0" />
+              <MapPin size={16} className="text-[#d4af37] shrink-0" />
             )}
             <div>
               <span className="font-semibold text-white">
