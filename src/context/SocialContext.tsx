@@ -194,6 +194,15 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // 4. Delete Friend (Unfriend)
   const deleteFriend = useCallback((friendId: string) => {
     if (!user) return;
+    // Optimistically update current user profile & requests state immediately
+    setCurrentUserProfile(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        friends: (prev.friends || []).filter(id => id !== friendId)
+      };
+    });
+    setRequests(prev => prev.filter(r => r.fromUserId !== friendId && r.toUserId !== friendId));
     deleteFriendInDb(user.uid, friendId);
   }, [user]);
 

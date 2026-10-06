@@ -20,6 +20,8 @@ import {
   serverTimestamp,
   arrayUnion,
   arrayRemove,
+  getDocs,
+  deleteDoc,
   type Firestore,
   type Unsubscribe
 } from 'firebase/firestore';
@@ -362,10 +364,15 @@ export function subscribeToAllUsers(
           }
         });
 
-      onUpdate([...Array.from(devoteesByEmail.values()), ...devoteesWithoutEmail]);
+      const list = [...Array.from(devoteesByEmail.values()), ...devoteesWithoutEmail];
+      // Only emit from local storage if we have users or if Firestore has not yet supplied users
+      if (!hasFirestoreLoaded || list.length > 0) {
+        onUpdate(list);
+      }
     } catch { /* ignore */ }
   };
 
+  let hasFirestoreLoaded = false;
   refreshFromLocal();
   const handleLocalUpdate = () => refreshFromLocal();
   window.addEventListener('pujo_users_updated', handleLocalUpdate);
@@ -374,8 +381,21 @@ export function subscribeToAllUsers(
     try {
       const q = query(collection(db, 'users'));
       const unsub = onSnapshot(q, (snapshot) => {
+        hasFirestoreLoaded = true;
         const devoteesByEmail = new Map<string, FriendProfile>();
         const devoteesWithoutEmail: FriendProfile[] = [];
+
+        // Synchronize all user documents into localStorage cache so local cache always has all users
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY_USERS);
+          const uMap: Record<string, UserProfile> = raw ? JSON.parse(raw) : {};
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data() as UserProfile;
+            const uid = data.uid || docSnap.id;
+            if (uid) uMap[uid] = { ...uMap[uid], ...data, uid };
+          });
+          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(uMap));
+        } catch { /* ignore */ }
 
         snapshot.forEach((docSnap) => {
           const data = docSnap.data() as UserProfile;
@@ -707,49 +727,94 @@ export async function declineFriendRequestInDb(requestId: string): Promise<void>
 
 /**
  * 8. Delete Friend from Cloud Firestore (Unfriend)
+ * Safely removes friendships across all equivalent UIDs and deletes friend request docs.
+ * Does NOT emit 'pujo_users_updated' so that the All Users / Add Friends directory remains 100% intact.
  */
 export async function deleteFriendInDb(
   currentUserId: string,
   friendUserId: string
 ): Promise<void> {
+  const myUids = getEquivalentUids(currentUserId);
+  const friendUids = getEquivalentUids(friendUserId);
+
   try {
     const uRaw = localStorage.getItem(STORAGE_KEY_USERS);
     if (uRaw) {
       const uMap: Record<string, UserProfile> = JSON.parse(uRaw);
-      if (uMap[currentUserId]) {
-        uMap[currentUserId].friends = (uMap[currentUserId].friends || []).filter(id => id !== friendUserId);
-      }
-      if (uMap[friendUserId]) {
-        uMap[friendUserId].friends = (uMap[friendUserId].friends || []).filter(id => id !== currentUserId);
-      }
+      myUids.forEach(mId => {
+        if (uMap[mId]) {
+          uMap[mId].friends = (uMap[mId].friends || []).filter(id => !friendUids.includes(id));
+        }
+      });
+      friendUids.forEach(fId => {
+        if (uMap[fId]) {
+          uMap[fId].friends = (uMap[fId].friends || []).filter(id => !myUids.includes(id));
+        }
+      });
       localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(uMap));
     }
 
     const rRaw = localStorage.getItem(STORAGE_KEY_REQUESTS);
     if (rRaw) {
       const rList: any[] = JSON.parse(rRaw);
-      const filtered = rList.filter(r => 
-        !((r.fromUserId === currentUserId && r.toUserId === friendUserId) ||
-          (r.fromUserId === friendUserId && r.toUserId === currentUserId))
-      );
+      const filtered = rList.filter(r => {
+        const fromIsMe = myUids.includes(r.fromUserId);
+        const toIsMe = myUids.includes(r.toUserId);
+        const fromIsFriend = friendUids.includes(r.fromUserId);
+        const toIsFriend = friendUids.includes(r.toUserId);
+        return !((fromIsMe && toIsFriend) || (fromIsFriend && toIsMe));
+      });
       localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(filtered));
     }
 
-    window.dispatchEvent(new Event('pujo_users_updated'));
+    // Only notify requests listener — do NOT wipe out user directory!
     window.dispatchEvent(new Event('pujo_requests_updated'));
   } catch { /* ignore */ }
 
   if (db && isFirestoreAvailable) {
     try {
-      const meRef = doc(db, 'users', currentUserId);
-      await updateDoc(meRef, {
-        friends: arrayRemove(friendUserId)
+      // 1. Remove friendship across all equivalent UIDs in Firestore
+      for (const mUid of myUids) {
+        try {
+          const meRef = doc(db, 'users', mUid);
+          await updateDoc(meRef, {
+            friends: arrayRemove(...friendUids)
+          });
+        } catch { /* ignore */ }
+      }
+
+      for (const fUid of friendUids) {
+        try {
+          const friendRef = doc(db, 'users', fUid);
+          await updateDoc(friendRef, {
+            friends: arrayRemove(...myUids)
+          });
+        } catch { /* ignore */ }
+      }
+
+      // 2. Delete any friend requests between these two users in Firestore
+      const reqSnapshot = await getDocs(collection(db, 'friend_requests'));
+      const myUidSet = new Set(myUids);
+      const friendUidSet = new Set(friendUids);
+      const toDelete: string[] = [];
+
+      reqSnapshot.forEach((docSnap) => {
+        const d = docSnap.data();
+        const fromIsMe = myUidSet.has(d.fromUserId);
+        const toIsMe = myUidSet.has(d.toUserId);
+        const fromIsFriend = friendUidSet.has(d.fromUserId);
+        const toIsFriend = friendUidSet.has(d.toUserId);
+
+        if ((fromIsMe && toIsFriend) || (fromIsFriend && toIsMe)) {
+          toDelete.push(docSnap.id);
+        }
       });
 
-      const friendRef = doc(db, 'users', friendUserId);
-      await updateDoc(friendRef, {
-        friends: arrayRemove(currentUserId)
-      });
+      for (const reqId of toDelete) {
+        try {
+          await deleteDoc(doc(db, 'friend_requests', reqId));
+        } catch { /* ignore */ }
+      }
     } catch (err) {
       console.warn('[FirebaseBackend] Firestore delete friend:', err);
     }

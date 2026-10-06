@@ -64,6 +64,11 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
     }
   }, [friends, activeFriendId]);
 
+  // Clear search filter when switching tabs so Add Friends list always shows all devotees
+  useEffect(() => {
+    setSearchQuery('');
+  }, [activeTab]);
+
   const currentFriend = useMemo(() => {
     return friends.find(f => f.id === activeFriendId) || friends[0] || null;
   }, [friends, activeFriendId]);
@@ -958,8 +963,13 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                     </button>
                     <button
                       onClick={() => {
+                        if (activeFriendId === confirmDeleteId) {
+                          setActiveFriendId('');
+                          setMobileChatView('list');
+                        }
                         deleteFriend(confirmDeleteId);
                         setConfirmDeleteId(null);
+                        setSearchQuery('');
                       }}
                       className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md cursor-pointer"
                     >
