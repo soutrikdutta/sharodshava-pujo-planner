@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Info, LogOut, SlidersHorizontal, MapPin, Home, Users, Flame, Compass } from 'lucide-react';
+import { Info, LogOut, SlidersHorizontal, MapPin, Home, Users, Flame, Compass, Bot } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
 
@@ -314,6 +314,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <span>User Walkthrough Guide</span>
                     </button>
                   )}
+
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      window.dispatchEvent(new Event('pujo_open_ai'));
+                    }}
+                    className="w-full flex items-center space-x-2 text-xs text-[#fcedb3] hover:text-white py-1.5 px-2 rounded-lg hover:bg-[#d4af37]/15 transition-colors text-left"
+                  >
+                    <Bot size={13} className="text-[#d4af37]" />
+                    <span>Pujo AI Assistant</span>
+                  </button>
 
                   <button
                     onClick={logout}

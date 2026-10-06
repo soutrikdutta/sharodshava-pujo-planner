@@ -33,10 +33,40 @@ const DEFAULT_SUGGESTION_CHIPS = [
   '🗺️ Open Interactive 3D Map'
 ];
 
+const STORAGE_KEY_AI_DISMISSED = 'pujo_ai_bubble_dismissed';
+
 export const PujoAiChatbot: React.FC = () => {
   const { coordinates, locality } = useLocation();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [isDismissed, setIsDismissed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY_AI_DISMISSED) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    const handleOpenAi = () => {
+      setIsDismissed(false);
+      try {
+        localStorage.removeItem(STORAGE_KEY_AI_DISMISSED);
+      } catch { /* ignore */ }
+      setIsOpen(true);
+    };
+    window.addEventListener('pujo_open_ai', handleOpenAi);
+    return () => window.removeEventListener('pujo_open_ai', handleOpenAi);
+  }, []);
+
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDismissed(true);
+    try {
+      localStorage.setItem(STORAGE_KEY_AI_DISMISSED, 'true');
+    } catch { /* ignore */ }
+  };
   const [messages, setMessages] = useState<BotMessage[]>([
     {
       id: 'welcome-1',
@@ -280,26 +310,57 @@ export const PujoAiChatbot: React.FC = () => {
 
   return (
     <>
-      {/* Floating Trigger Button */}
-      <motion.button
-        onClick={() => setIsOpen(prev => !prev)}
-        className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 p-3.5 sm:p-4 rounded-full bg-gradient-to-r from-[#d4af37] via-[#f39c12] to-[#c0392b] text-black shadow-2xl flex items-center gap-2 group cursor-pointer border-2 border-amber-200/50 hover:brightness-110 active:scale-95 transition-all animate-float-gentle animate-glow-ring shimmer-badge"
-        whileHover={{ scale: 1.08, y: -4 }}
-        whileTap={{ scale: 0.94 }}
-        transition={{ type: 'spring', damping: 18, stiffness: 380 }}
-        title="Open Durga Puja 2026 AI Assistant"
-      >
-        <div className="relative">
-          <Bot size={24} className="text-black drop-shadow-md group-hover:rotate-12 transition-transform duration-300" />
-          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 animate-badge-bounce">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-100 opacity-85" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-300 shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
-          </span>
-        </div>
-        <span className="font-bold text-xs sm:text-sm tracking-wide hidden sm:inline text-black drop-shadow-xs">
-          Pujo AI Guide
-        </span>
-      </motion.button>
+      {/* Movable Small Floating Trigger Button */}
+      <AnimatePresence>
+        {!isDismissed && !isOpen && (
+          <motion.div
+            drag
+            dragMomentum={false}
+            dragElastic={0.1}
+            onDragStart={() => setIsDragging(true)}
+            onDragEnd={() => {
+              setTimeout(() => setIsDragging(false), 150);
+            }}
+            initial={{ opacity: 0, scale: 0.7, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            className="fixed bottom-24 right-4 sm:bottom-7 sm:right-7 z-40 touch-none select-none cursor-grab active:cursor-grabbing"
+            style={{ touchAction: 'none' }}
+          >
+            <div className="relative group">
+              {/* Dismiss / Remove Cross Sign Button */}
+              <button
+                type="button"
+                onClick={handleDismiss}
+                title="Remove AI button (You can open from Navbar anytime)"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#12141d] border border-white/30 hover:border-rose-400 hover:bg-rose-500 text-white/70 hover:text-white flex items-center justify-center transition-all shadow-md cursor-pointer z-50 group-hover:opacity-100 opacity-80"
+              >
+                <X size={10} strokeWidth={2.8} />
+              </button>
+
+              {/* Compact Floating Orb Button */}
+              <motion.button
+                type="button"
+                onClick={() => {
+                  if (!isDragging) setIsOpen(true);
+                }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.92 }}
+                transition={{ type: 'spring', damping: 18, stiffness: 400 }}
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[2px] bg-gradient-to-tr from-[#d4af37] via-[#f39c12] to-[#c0392b] shadow-2xl flex items-center justify-center cursor-pointer border border-amber-200/50 animate-glow-ring shimmer-badge"
+                title="Sharodshav AI Guide (Drag to move anywhere)"
+              >
+                <div className="w-full h-full rounded-full bg-black/85 backdrop-blur-md flex items-center justify-center text-[#fcedb3]">
+                  <Bot size={20} className="text-[#fcedb3] drop-shadow-sm group-hover:rotate-12 transition-transform duration-300" />
+                </div>
+
+                {/* Active Live Beacon Dot */}
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#08090d] shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Chat Modal */}
       <AnimatePresence>
