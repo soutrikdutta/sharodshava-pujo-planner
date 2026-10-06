@@ -79,15 +79,17 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!user?.uid) return;
     const unsub = subscribeToAllUsers(user.uid, (users) => {
       setAllUsers(users);
-    });
+    }, user.email);
     return () => unsub();
-  }, [user?.uid]);
+  }, [user?.uid, user?.email]);
 
   // 4. Real-time Subscription to Friend Requests for this user in Cloud Firestore
   useEffect(() => {
     if (!user?.uid) return;
     const unsub = subscribeToFriendRequests(user.uid, (dbRequests) => {
-      setRequests(dbRequests);
+      // Filter out any self requests
+      const cleanReqs = dbRequests.filter(r => r.fromUserId !== user.uid || r.toUserId !== user.uid);
+      setRequests(cleanReqs);
     });
     return () => unsub();
   }, [user?.uid]);
@@ -100,18 +102,20 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     
     // 1. Live friends from current user profile
     if (currentUserProfile?.friends) {
-      currentUserProfile.friends.forEach(fId => acceptedUserIds.add(fId));
+      currentUserProfile.friends.forEach(fId => {
+        if (fId !== user.uid) acceptedUserIds.add(fId);
+      });
     }
 
     // 2. Verified accepted friend requests strictly matching UIDs
     requests.forEach(r => {
       if (r.status === 'accepted') {
-        if (r.fromUserId === user.uid && r.toUserId) acceptedUserIds.add(r.toUserId);
-        if (r.toUserId === user.uid && r.fromUserId) acceptedUserIds.add(r.fromUserId);
+        if (r.fromUserId === user.uid && r.toUserId && r.toUserId !== user.uid) acceptedUserIds.add(r.toUserId);
+        if (r.toUserId === user.uid && r.fromUserId && r.fromUserId !== user.uid) acceptedUserIds.add(r.fromUserId);
       }
     });
 
-    return allUsers.filter(u => acceptedUserIds.has(u.id));
+    return allUsers.filter(u => acceptedUserIds.has(u.id) && u.id !== user.uid);
   }, [user?.uid, currentUserProfile, requests, allUsers]);
 
   // 5. Real-time Chat Subscription for all confirmed friends (keyed strictly by chatId)
@@ -151,9 +155,11 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [user, locality, coordinates]);
 
-  // 1. Send Friend Request
+  // 1. Send Friend Request (Guarded against self-requests)
   const sendJoinRequest = useCallback((friend: FriendProfile, customMessage?: string) => {
     if (!user) return;
+    if (friend.id === user.uid) return;
+    if (user.email && friend.email && friend.email.toLowerCase() === user.email.toLowerCase()) return;
     sendFriendRequestToDb(user, friend, customMessage);
   }, [user]);
 
