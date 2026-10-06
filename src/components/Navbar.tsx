@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Info, LogOut, SlidersHorizontal, MapPin, Home, Users } from 'lucide-react';
+import { Info, LogOut, SlidersHorizontal, MapPin, Home, Users, Flame, Compass } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
 
@@ -9,6 +9,8 @@ interface NavbarProps {
   onOpenInfo: () => void;
   onOpenNearby: () => void;
   onOpenSocialHub?: () => void;
+  onOpenSuggestPandal?: () => void;
+  onOpenGuide?: () => void;
   simulatedDate: string | null;
   onSelectSimulatedDate: (dateStr: string | null) => void;
 }
@@ -33,6 +35,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenInfo, 
   onOpenNearby,
   onOpenSocialHub,
+  onOpenSuggestPandal,
+  onOpenGuide,
   simulatedDate, 
   onSelectSimulatedDate 
 }) => {
@@ -217,6 +221,33 @@ export const Navbar: React.FC<NavbarProps> = ({
             </motion.button>
           )}
 
+          {/* Suggest Pandal Button */}
+          {onOpenSuggestPandal && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onOpenSuggestPandal}
+              title="Suggest a Pandal for Sharodshav"
+              className="hidden sm:flex px-2.5 py-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 transition-all items-center gap-1 text-xs cursor-pointer"
+            >
+              <Flame size={13} className="text-[#d4af37]" />
+              <span className="text-[11px] font-semibold">Suggest</span>
+            </motion.button>
+          )}
+
+          {/* User Guide Button */}
+          {onOpenGuide && (
+            <motion.button
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.94 }}
+              onClick={onOpenGuide}
+              title="How to Use / App Guide"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-emerald-400/50 flex items-center justify-center text-white/80 hover:text-emerald-300 transition-all cursor-pointer shrink-0"
+            >
+              <Compass size={15} />
+            </motion.button>
+          )}
+
           {/* Sharodshav Info ("i") modal */}
           <motion.button
             whileHover={{ scale: 1.1 }}
@@ -252,16 +283,37 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {showUserMenu && (
                 <div 
-                  className="absolute right-0 mt-2 w-52 p-3 rounded-2xl glass-panel border border-white/20 shadow-2xl z-50 bg-[#0b0d13]/95"
+                  className="absolute right-0 mt-2 w-52 p-3 rounded-2xl glass-panel border border-white/20 shadow-2xl z-50 bg-[#0b0d13]/95 space-y-1"
                   onClick={() => setShowUserMenu(false)}
                 >
-                  <div className="mb-2.5 pb-2 border-b border-white/10">
+                  <div className="mb-2 pb-2 border-b border-white/10">
                     <p className="text-xs font-semibold text-white truncate">{user.displayName}</p>
                     <p className="text-[11px] text-white/40 truncate">{user.email}</p>
                   </div>
+
+                  {onOpenSuggestPandal && (
+                    <button
+                      onClick={onOpenSuggestPandal}
+                      className="w-full flex items-center space-x-2 text-xs text-amber-300 hover:text-amber-200 py-1.5 px-2 rounded-lg hover:bg-amber-500/10 transition-colors text-left"
+                    >
+                      <Flame size={13} className="text-[#d4af37]" />
+                      <span>Suggest a Pandal</span>
+                    </button>
+                  )}
+
+                  {onOpenGuide && (
+                    <button
+                      onClick={onOpenGuide}
+                      className="w-full flex items-center space-x-2 text-xs text-emerald-300 hover:text-emerald-200 py-1.5 px-2 rounded-lg hover:bg-emerald-500/10 transition-colors text-left"
+                    >
+                      <Compass size={13} />
+                      <span>User Walkthrough Guide</span>
+                    </button>
+                  )}
+
                   <button
                     onClick={logout}
-                    className="w-full flex items-center space-x-2 text-xs text-red-400 hover:text-red-300 py-1.5 px-2 rounded-lg hover:bg-red-500/10 transition-colors"
+                    className="w-full flex items-center space-x-2 text-xs text-red-400 hover:text-red-300 py-1.5 px-2 rounded-lg hover:bg-red-500/10 transition-colors pt-2 border-t border-white/10"
                   >
                     <LogOut size={13} />
                     <span>Sign Out</span>

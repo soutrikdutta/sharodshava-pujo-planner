@@ -20,6 +20,8 @@ const NearbyPandalsModal = lazy(() => import('./components/NearbyPandalsModal').
 const FriendsAndChatModal = lazy(() => import('./components/FriendsAndChatModal').then(m => ({ default: m.FriendsAndChatModal })));
 const JoinTeamPortalModal = lazy(() => import('./components/JoinTeamPortalModal').then(m => ({ default: m.JoinTeamPortalModal })));
 const PujoAiChatbot = lazy(() => import('./components/PujoAiChatbot').then(m => ({ default: m.PujoAiChatbot })));
+const SuggestPandalModal = lazy(() => import('./components/SuggestPandalModal').then(m => ({ default: m.SuggestPandalModal })));
+const WelcomeGuideModal = lazy(() => import('./components/WelcomeGuideModal').then(m => ({ default: m.WelcomeGuideModal })));
 import { DURGA_PUJA_2026, getFestivalStatus, type FestivalDay, type PandalPlace } from './config/festivalConfig';
 import { KOLKATA_SECTORS_DATA } from './config/kolkataSectors';
 import { findTeamByCodeOrParam, type PlannedTeam } from './services/teamService';
@@ -30,6 +32,9 @@ const DashboardContent: React.FC = () => {
   const [isDayModalOpen, setIsDayModalOpen] = useState(false);
   const [isDayDetailsOpen, setIsDayDetailsOpen] = useState(false);
   const [isNearbyModalOpen, setIsNearbyModalOpen] = useState(false);
+  const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false);
+  const [suggestZone, setSuggestZone] = useState<'north' | 'central' | 'south'>('south');
+  const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
   const [isSitePickerOpen, setIsSitePickerOpen] = useState(false);
   const [isPlanTripOpen, setIsPlanTripOpen] = useState(false);
   const [isSocialHubOpen, setIsSocialHubOpen] = useState(false);
@@ -48,6 +53,20 @@ const DashboardContent: React.FC = () => {
 
   // Selected Day from the Day Selector
   const [selectedDay, setSelectedDay] = useState<FestivalDay | null>(null);
+
+  // Check if first-time user for welcome guide
+  useEffect(() => {
+    if (user) {
+      const guideKey = `pujo_guide_seen_${user.uid}`;
+      const seen = localStorage.getItem(guideKey);
+      if (!seen) {
+        const timer = setTimeout(() => {
+          setIsGuideModalOpen(true);
+        }, 800);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [user]);
 
   // Auto-detect joinTeam URL query param on page load
   useEffect(() => {
@@ -192,6 +211,11 @@ const DashboardContent: React.FC = () => {
           onOpenInfo={() => setIsInfoOpen(true)}
           onOpenNearby={() => setIsNearbyModalOpen(true)}
           onOpenSocialHub={() => setIsSocialHubOpen(true)}
+          onOpenSuggestPandal={() => {
+            setSuggestZone('south');
+            setIsSuggestModalOpen(true);
+          }}
+          onOpenGuide={() => setIsGuideModalOpen(true)}
           simulatedDate={simulatedDate}
           onSelectSimulatedDate={(date) => {
             setSimulatedDate(date);
@@ -269,6 +293,10 @@ const DashboardContent: React.FC = () => {
             setIsSitePickerOpen(false);
             setIsPlanTripOpen(true);
           }}
+          onOpenSuggestPandal={(zone) => {
+            if (zone) setSuggestZone(zone);
+            setIsSuggestModalOpen(true);
+          }}
         />
 
         {/* Day Selector Modal Window */}
@@ -320,6 +348,23 @@ const DashboardContent: React.FC = () => {
             setPlanTripPandals(undefined);
             setIsJoinTeamPortalOpen(false);
             setIsPlanTripOpen(true);
+          }}
+        />
+
+        {/* Suggest Pandal Modal */}
+        <SuggestPandalModal
+          isOpen={isSuggestModalOpen}
+          onClose={() => setIsSuggestModalOpen(false)}
+          defaultZone={suggestZone}
+        />
+
+        {/* Welcome & First Time User Walkthrough Guide */}
+        <WelcomeGuideModal
+          isOpen={isGuideModalOpen}
+          onClose={() => setIsGuideModalOpen(false)}
+          onOpenMap={() => {
+            setIsGuideModalOpen(false);
+            setIsSitePickerOpen(true);
           }}
         />
 

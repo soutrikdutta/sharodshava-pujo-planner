@@ -98,27 +98,35 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const friends = useMemo(() => {
     if (!user?.uid) return [];
 
+    // All possible UIDs belonging to the current user (e.g. across Google Identity Services & Firebase Auth)
+    const myUids = new Set<string>([
+      user.uid,
+      ...allUsers.filter(u => u.email && user.email && u.email.toLowerCase() === user.email.toLowerCase()).map(u => u.id)
+    ]);
+
     const acceptedUserIds = new Set<string>();
     
     // 1. Live friends from current user profile
     if (currentUserProfile?.friends) {
       currentUserProfile.friends.forEach(fId => {
-        if (fId !== user.uid) acceptedUserIds.add(fId);
+        if (!myUids.has(fId)) acceptedUserIds.add(fId);
       });
     }
 
-    // 2. Verified accepted friend requests strictly matching UIDs
+    // 2. Verified accepted friend requests matching ANY of current user's UIDs
     requests.forEach(r => {
       if (r.status === 'accepted') {
-        if (r.fromUserId === user.uid && r.toUserId && r.toUserId !== user.uid) acceptedUserIds.add(r.toUserId);
-        if (r.toUserId === user.uid && r.fromUserId && r.fromUserId !== user.uid) acceptedUserIds.add(r.fromUserId);
+        const fromIsMe = myUids.has(r.fromUserId || '');
+        const toIsMe = myUids.has(r.toUserId || '');
+        if (fromIsMe && r.toUserId && !myUids.has(r.toUserId)) acceptedUserIds.add(r.toUserId);
+        if (toIsMe && r.fromUserId && !myUids.has(r.fromUserId)) acceptedUserIds.add(r.fromUserId);
       }
     });
 
-    return allUsers.filter(u => acceptedUserIds.has(u.id) && u.id !== user.uid);
-  }, [user?.uid, currentUserProfile, requests, allUsers]);
+    return allUsers.filter(u => acceptedUserIds.has(u.id) && !myUids.has(u.id));
+  }, [user?.uid, user?.email, currentUserProfile, requests, allUsers]);
 
-  // 5. Real-time Chat Subscription for all confirmed friends (keyed strictly by chatId)
+  // 5. Real-time Chat Subscription for all confirmed friends (keyed strictly by chatId and friendId)
   useEffect(() => {
     if (!user?.uid || friends.length === 0) return;
     const unsubs: (() => void)[] = [];
@@ -131,7 +139,7 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           [chatId]: messages,
           [friend.id]: messages
         }));
-      });
+      }, user.uid, friend.id);
       unsubs.push(unsub);
     });
 

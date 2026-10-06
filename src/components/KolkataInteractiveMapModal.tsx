@@ -24,7 +24,8 @@ import {
   ChevronDown,
   ChevronUp,
   RotateCcw,
-  Search
+  Search,
+  Flame
 } from 'lucide-react';
 import { 
   DURGA_PUJA_2026, 
@@ -64,6 +65,7 @@ interface KolkataInteractiveMapModalProps {
   initialTeam?: PlannedTeam | null;
   onSelectDay?: (day: FestivalDay) => void;
   onOpenPlanTrip?: (preselectedPandals?: PandalPlace[]) => void;
+  onOpenSuggestPandal?: (zone?: 'north' | 'central' | 'south', preFillName?: string) => void;
 }
 
 type ZoneKey = 'north' | 'central' | 'south';
@@ -111,7 +113,8 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
   initialConfirmed,
   initialTeam,
   onSelectDay,
-  onOpenPlanTrip
+  onOpenPlanTrip,
+  onOpenSuggestPandal
 }) => {
   // Active demo window (null means viewing the map)
   const [activeZoneWindow, setActiveZoneWindow] = useState<ZoneKey | null>(null);
@@ -766,16 +769,29 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
 
               {/* Action Toolbar: Recommended Options Button + Selection Counters */}
               <div className="p-2.5 sm:p-3 rounded-2xl bg-white/[0.04] border border-white/15 flex items-center justify-between flex-wrap gap-2.5 shrink-0">
-                {/* 1-Tap Auto-Check Recommended Button */}
-                <button
-                  onClick={handleSelectRecommended}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#e6ca65] to-[#d4af37] hover:scale-102 text-black text-xs font-extrabold shadow-md transition-all flex items-center gap-2 cursor-pointer border border-amber-200"
-                  title="Automatically check all Google-ranked iconic pandals in this zone"
-                >
-                  <Star size={14} fill="black" />
-                  <span>Select Recommended Options</span>
-                  <CheckSquare size={14} />
-                </button>
+                {/* 1-Tap Auto-Check Recommended Button + Suggest Button */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={handleSelectRecommended}
+                    className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#e6ca65] to-[#d4af37] hover:scale-102 text-black text-xs font-extrabold shadow-md transition-all flex items-center gap-1.5 cursor-pointer border border-amber-200"
+                    title="Automatically check all Google-ranked iconic pandals in this zone"
+                  >
+                    <Star size={13} fill="black" />
+                    <span>Select Recommended Options</span>
+                    <CheckSquare size={13} />
+                  </button>
+
+                  {onOpenSuggestPandal && (
+                    <button
+                      onClick={() => onOpenSuggestPandal(activeZoneWindow || 'south')}
+                      className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                      title="Suggest a missing pandal to be included"
+                    >
+                      <Flame size={13} className="text-[#d4af37]" />
+                      <span>Suggest Pandal</span>
+                    </button>
+                  )}
+                </div>
 
                 {/* Selection Count & Select All / Clear */}
                 <div className="flex items-center gap-2.5 text-xs">
@@ -876,12 +892,23 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                     <p className="text-xs text-white/40">
                       Try searching for another neighborhood or pandal name in {currentZoneInfo?.name}.
                     </p>
-                    <button
-                      onClick={() => setPandalSearchQuery('')}
-                      className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold cursor-pointer transition-colors"
-                    >
-                      Clear Search
-                    </button>
+                    <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
+                      <button
+                        onClick={() => setPandalSearchQuery('')}
+                        className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold cursor-pointer transition-colors"
+                      >
+                        Clear Search
+                      </button>
+                      {onOpenSuggestPandal && (
+                        <button
+                          onClick={() => onOpenSuggestPandal(activeZoneWindow || 'south', pandalSearchQuery)}
+                          className="px-3.5 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/40 hover:bg-amber-500/25 text-amber-300 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1.5"
+                        >
+                          <Flame size={13} className="text-[#d4af37]" />
+                          <span>Suggest "{pandalSearchQuery}"</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   displayedPandals.map((place, idx) => {

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useSocial } from '../context/SocialContext';
 import { useAuth } from '../context/AuthContext';
-import { getDeterministicChatId } from '../services/firebaseBackend';
+import { getDeterministicChatId, getAllDeterministicChatIds } from '../services/firebaseBackend';
 
 interface FriendsAndChatModalProps {
   isOpen: boolean;
@@ -73,11 +73,32 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
     return getDeterministicChatId(user.uid, currentFriend.id);
   }, [user?.uid, currentFriend?.id]);
 
-  // Isolated active messages strictly for this conversation
+  // Aggregated active messages strictly for this conversation across all linked UIDs
   const activeChatMessages = useMemo(() => {
-    if (!currentChatId) return [];
-    return chats[currentChatId] || chats[currentFriend?.id || ''] || [];
-  }, [chats, currentChatId, currentFriend?.id]);
+    if (!currentFriend?.id) return [];
+    const direct = currentChatId ? (chats[currentChatId] || []) : [];
+    const byFriend = chats[currentFriend.id] || [];
+
+    const allCandidateIds = user?.uid ? getAllDeterministicChatIds(user.uid, currentFriend.id) : [];
+    const candidateMsgs: any[] = [];
+    allCandidateIds.forEach(cid => {
+      if (chats[cid]) candidateMsgs.push(...chats[cid]);
+    });
+
+    const combined = [...direct, ...byFriend, ...candidateMsgs];
+    const uniqueMap = new Map<string, any>();
+    combined.forEach(m => {
+      const k = m.id || `${m.senderId}_${m.text}_${m.timestamp}`;
+      uniqueMap.set(k, m);
+    });
+
+    return Array.from(uniqueMap.values()).sort((a: any, b: any) => {
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+      if (timeA && timeB) return timeA - timeB;
+      return (a.timestamp || '').localeCompare(b.timestamp || '');
+    });
+  }, [chats, currentChatId, currentFriend?.id, user?.uid]);
 
   // Auto-scroll to bottom of chat
   useEffect(() => {
@@ -750,7 +771,7 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                                         <span>{msg.routeData.title}</span>
                                       </div>
                                       <div className="space-y-1 text-[10px]">
-                                        {msg.routeData.pandals.map((p, idx) => (
+                                        {msg.routeData.pandals.map((p: string, idx: number) => (
                                           <div key={idx} className="flex items-center gap-1.5 opacity-90">
                                             <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${
                                               isMe ? 'bg-black/20 text-black' : 'bg-[#d4af37]/20 text-[#d4af37]'

@@ -53,11 +53,36 @@ try {
   isFirestoreAvailable = false;
 }
 
-// Clear legacy unstructured chat storage to prevent cross-account contamination
-try {
-  localStorage.removeItem('pujo_db_chats_v2');
-  localStorage.removeItem('pujo_db_chats');
-} catch { /* ignore */ }
+// Multi-device UID aliases linking Google sub IDs <-> Firebase Auth UIDs
+const KNOWN_UID_ALIASES: Record<string, string[]> = {
+  '100706602503033180208': ['PYNmwAz7YbTwZvslooDeZLNluQD2'],
+  'PYNmwAz7YbTwZvslooDeZLNluQD2': ['100706602503033180208'],
+  '112352330910615785622': ['mA36I31MRTgddd2ykiXH0b5vlp72'],
+  'mA36I31MRTgddd2ykiXH0b5vlp72': ['112352330910615785622']
+};
+
+export function getEquivalentUids(uid: string): string[] {
+  const aliases = KNOWN_UID_ALIASES[uid] || [];
+  return Array.from(new Set([uid, ...aliases]));
+}
+
+// Helper: All deterministic Chat IDs across any potential alias UIDs
+export function getAllDeterministicChatIds(uid1: string, uid2: string): string[] {
+  const uids1 = getEquivalentUids(uid1);
+  const uids2 = getEquivalentUids(uid2);
+  const set = new Set<string>();
+  for (const u1 of uids1) {
+    for (const u2 of uids2) {
+      if (u1 !== u2) {
+        set.add([u1, u2].sort().join('__'));
+      }
+    }
+  }
+  if (set.size === 0) {
+    set.add([uid1, uid2].sort().join('__'));
+  }
+  return Array.from(set);
+}
 
 const STORAGE_KEY_USERS = 'pujo_db_users_v2';
 const STORAGE_KEY_REQUESTS = 'pujo_db_requests_v2';
@@ -580,84 +605,116 @@ export async function deleteFriendInDb(
 }
 
 /**
- * 9. Real-Time Chat Message Subscription (Strictly Isolated per chatId)
+ * 9. Real-Time Chat Message Subscription (Multi-Device & Cross-Alias Sync)
  */
 export function subscribeToChatMessages(
   chatId: string,
-  onUpdate: (messages: ChatMessage[]) => void
+  onUpdate: (messages: ChatMessage[]) => void,
+  currentUserId?: string,
+  friendId?: string
 ): Unsubscribe {
-  const localChatKey = STORAGE_KEY_CHATS_PREFIX + chatId;
+  const parts = chatId.split('__');
+  const uid1 = currentUserId || parts[0] || '';
+  const uid2 = friendId || parts[1] || '';
+  const allCandidateChatIds = getAllDeterministicChatIds(uid1, uid2);
+  if (!allCandidateChatIds.includes(chatId)) {
+    allCandidateChatIds.unshift(chatId);
+  }
+
+  // Multi-chat aggregated message map
+  const chatMessagesMap = new Map<string, ChatMessage>();
+
+  const mergeAndEmit = () => {
+    const list = Array.from(chatMessagesMap.values()).sort((a, b) => {
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+      if (timeA && timeB) return timeA - timeB;
+      return a.timestamp.localeCompare(b.timestamp);
+    });
+
+    // Save to primary local cache
+    try {
+      localStorage.setItem(STORAGE_KEY_CHATS_PREFIX + chatId, JSON.stringify(list));
+    } catch { /* ignore */ }
+
+    onUpdate(list);
+  };
 
   const refreshFromLocal = () => {
-    try {
-      const raw = localStorage.getItem(localChatKey);
-      const msgs: ChatMessage[] = raw ? JSON.parse(raw) : [];
-      onUpdate(msgs);
-    } catch {
-      onUpdate([]);
-    }
+    allCandidateChatIds.forEach(cid => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_CHATS_PREFIX + cid);
+        if (raw) {
+          const msgs: ChatMessage[] = JSON.parse(raw);
+          msgs.forEach(m => {
+            const key = m.id || `${m.senderId}_${m.text}_${m.timestamp}`;
+            chatMessagesMap.set(key, m);
+          });
+        }
+      } catch { /* ignore */ }
+    });
+    mergeAndEmit();
   };
 
   refreshFromLocal();
+
   const handleChatEvent = (e: any) => {
-    if (!e.detail || e.detail.chatId === chatId) {
+    if (!e.detail || allCandidateChatIds.includes(e.detail.chatId)) {
       refreshFromLocal();
     }
   };
   window.addEventListener('pujo_chats_updated', handleChatEvent as EventListener);
 
-  if (db && isFirestoreAvailable) {
-    try {
-      const messagesRef = collection(db, 'chats', chatId, 'messages');
-      const q = query(messagesRef, orderBy('createdAt', 'asc'));
+  const unsubs: (() => void)[] = [];
 
-      const unsub = onSnapshot(q, (snapshot) => {
-        const msgs: ChatMessage[] = [];
-        snapshot.forEach((dSnap) => {
-          const d = dSnap.data();
-          msgs.push({
-            id: dSnap.id,
-            chatId: chatId,
-            friendId: d.friendId,
-            senderId: d.senderId,
-            senderName: d.senderName,
-            senderAvatar: d.senderAvatar,
-            sender: d.sender,
-            text: d.text,
-            timestamp: d.timestamp || 'Just now',
-            isRouteCard: d.isRouteCard,
-            routeData: d.routeData,
-            createdAt: d.createdAt
+  if (db && isFirestoreAvailable) {
+    allCandidateChatIds.forEach(cid => {
+      try {
+        const messagesRef = collection(db, 'chats', cid, 'messages');
+        const q = query(messagesRef, orderBy('createdAt', 'asc'));
+
+        const unsub = onSnapshot(q, (snapshot) => {
+          snapshot.forEach((dSnap) => {
+            const d = dSnap.data();
+            const msg: ChatMessage = {
+              id: dSnap.id,
+              chatId: chatId,
+              friendId: d.friendId,
+              senderId: d.senderId,
+              senderName: d.senderName,
+              senderAvatar: d.senderAvatar,
+              sender: d.sender,
+              text: d.text,
+              timestamp: d.timestamp || 'Just now',
+              isRouteCard: d.isRouteCard,
+              routeData: d.routeData,
+              createdAt: d.createdAt
+            };
+            const key = dSnap.id || `${d.senderId}_${d.text}_${d.timestamp}`;
+            chatMessagesMap.set(key, msg);
           });
+
+          mergeAndEmit();
+        }, (err) => {
+          console.warn('[FirebaseBackend] Chat listener error for', cid, err);
         });
 
-        // Save isolated local cache for this exact chatId
-        try {
-          localStorage.setItem(localChatKey, JSON.stringify(msgs));
-        } catch { /* ignore */ }
-
-        onUpdate(msgs);
-      }, (err) => {
-        console.warn('[FirebaseBackend] Chat listener:', err);
-      });
-
-      return () => {
-        unsub();
-        window.removeEventListener('pujo_chats_updated', handleChatEvent as EventListener);
-      };
-    } catch {
-      // fallback
-    }
+        unsubs.push(unsub);
+      } catch (err) {
+        console.warn('[FirebaseBackend] Setup listener error for', cid, err);
+      }
+    });
   }
 
   return () => {
+    unsubs.forEach(u => u());
     window.removeEventListener('pujo_chats_updated', handleChatEvent as EventListener);
   };
 }
 
 /**
  * 10. Send Direct Chat Message to Cloud Firestore
- * Explicitly associates the message with senderUser.uid, ensuring correct left/right orientation
+ * Explicitly associates the message with senderUser.uid and mirrors across aliases
  */
 export async function sendChatMessageToDb(
   chatId: string,
@@ -684,45 +741,111 @@ export async function sendChatMessageToDb(
     } : undefined
   };
 
+  const parts = chatId.split('__');
+  const allChatIds = getAllDeterministicChatIds(parts[0] || senderUser.uid, parts[1] || friendId);
+  if (!allChatIds.includes(chatId)) allChatIds.push(chatId);
+
   // Local storage isolated cache update
-  const localChatKey = STORAGE_KEY_CHATS_PREFIX + chatId;
-  try {
-    const raw = localStorage.getItem(localChatKey);
-    const msgs: ChatMessage[] = raw ? JSON.parse(raw) : [];
-    localStorage.setItem(localChatKey, JSON.stringify([...msgs, newMsg]));
-    window.dispatchEvent(new CustomEvent('pujo_chats_updated', { detail: { chatId } }));
-  } catch { /* ignore */ }
-
-  // Cloud Firestore add document
-  if (db && isFirestoreAvailable) {
+  allChatIds.forEach(cid => {
+    const localChatKey = STORAGE_KEY_CHATS_PREFIX + cid;
     try {
-      // Record participants on parent chat doc
-      const [p1, p2] = chatId.split('__');
-      if (p1 && p2) {
-        await setDoc(doc(db, 'chats', chatId), {
-          participants: [p1, p2],
-          lastMessage: text.trim(),
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-      }
+      const raw = localStorage.getItem(localChatKey);
+      const msgs: ChatMessage[] = raw ? JSON.parse(raw) : [];
+      localStorage.setItem(localChatKey, JSON.stringify([...msgs, { ...newMsg, chatId: cid }]));
+    } catch { /* ignore */ }
+  });
+  window.dispatchEvent(new CustomEvent('pujo_chats_updated', { detail: { chatId } }));
 
-      const messagesRef = collection(db, 'chats', chatId, 'messages');
-      await setDoc(doc(messagesRef, newMsg.id), {
-        chatId,
-        senderId: senderUser.uid,
-        senderName: senderUser.displayName || 'Devotee',
-        senderAvatar: senderUser.photoURL || '',
-        friendId,
-        text: newMsg.text,
-        timestamp: newMsg.timestamp,
-        isRouteCard: newMsg.isRouteCard || null,
-        routeData: newMsg.routeData || null,
-        createdAt: serverTimestamp()
-      });
-    } catch (err) {
-      console.warn('[FirebaseBackend] Firestore send chat message:', err);
+  // Cloud Firestore add document across all target IDs
+  if (db && isFirestoreAvailable) {
+    for (const cid of allChatIds) {
+      try {
+        const [p1, p2] = cid.split('__');
+        if (p1 && p2) {
+          await setDoc(doc(db, 'chats', cid), {
+            participants: [p1, p2],
+            lastMessage: text.trim(),
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        }
+
+        const messagesRef = collection(db, 'chats', cid, 'messages');
+        await setDoc(doc(messagesRef, newMsg.id), {
+          chatId: cid,
+          senderId: senderUser.uid,
+          senderName: senderUser.displayName || 'Devotee',
+          senderAvatar: senderUser.photoURL || '',
+          friendId,
+          text: newMsg.text,
+          timestamp: newMsg.timestamp,
+          isRouteCard: newMsg.isRouteCard || null,
+          routeData: newMsg.routeData || null,
+          createdAt: serverTimestamp()
+        });
+      } catch (err) {
+        console.warn('[FirebaseBackend] Firestore send chat message for', cid, err);
+      }
     }
   }
 
   return newMsg;
+}
+
+/**
+ * 11. Pandal Suggestions System
+ * Saves user-suggested pandals to Cloud Firestore and forwards to Google Docs via Apps Script
+ */
+export interface PandalSuggestion {
+  id?: string;
+  zone: 'north' | 'central' | 'south';
+  zoneLabel: string;
+  pandalName: string;
+  locality?: string;
+  description?: string;
+  submittedByName?: string;
+  submittedByEmail?: string;
+  submittedByUid?: string;
+  timestamp: string;
+}
+
+export async function submitPandalSuggestionToDb(suggestion: PandalSuggestion): Promise<{ success: boolean; id: string }> {
+  const id = `sug-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+  const record = {
+    ...suggestion,
+    id,
+    createdAt: serverTimestamp ? serverTimestamp() : new Date().toISOString()
+  };
+
+  // 1. Save to local storage for quick offline access
+  try {
+    const raw = localStorage.getItem('pujo_pandal_suggestions');
+    const list = raw ? JSON.parse(raw) : [];
+    localStorage.setItem('pujo_pandal_suggestions', JSON.stringify([record, ...list]));
+  } catch { /* ignore */ }
+
+  // 2. Save to Firestore collection 'pandal_suggestions'
+  if (db && isFirestoreAvailable) {
+    try {
+      await setDoc(doc(db, 'pandal_suggestions', id), record);
+    } catch (err) {
+      console.warn('[FirebaseBackend] Firestore suggestion error:', err);
+    }
+  }
+
+  // 3. Forward to Google Docs / Google Apps Script Webhook if configured
+  const webhookUrl = (import.meta as any).env?.VITE_GOOGLE_DOCS_WEBHOOK_URL || localStorage.getItem('pujo_docs_webhook_url');
+  if (webhookUrl) {
+    try {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(record)
+      });
+    } catch (err) {
+      console.warn('[FirebaseBackend] Google Docs Webhook error:', err);
+    }
+  }
+
+  return { success: true, id };
 }
