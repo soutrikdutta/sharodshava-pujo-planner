@@ -76,8 +76,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Center: Live Time (Desktop only) */}
-        <div className="hidden lg:flex absolute left-1/2 -translate-x-1/2 flex-col items-center pointer-events-none">
+        {/* Center: Live Time (Only on large displays in natural flow so it NEVER overlaps) */}
+        <div className="hidden 2xl:flex flex-col items-center pointer-events-none px-4 shrink-0">
           <LiveClock />
           {simulatedDate && (
             <span className="text-[9px] text-[#d4af37]/90 font-mono mt-0.5 tracking-wider uppercase">
@@ -89,13 +89,13 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Right: Actions */}
         <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
           
-          {/* Home Button (Desktop / Tablet) */}
+          {/* Home Button (Visible on wide screens where ample space is guaranteed) */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onGoHome}
             title="Go to Home Dashboard"
-            className="hidden sm:flex px-3 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-[#d4af37]/50 text-white transition-all items-center gap-1 text-xs cursor-pointer"
+            className="hidden xl:flex px-3 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-[#d4af37]/50 text-white transition-all items-center gap-1 text-xs cursor-pointer shrink-0"
           >
             <Home size={14} className="text-[#d4af37]" />
             <span className="text-[11px] font-medium">Home</span>

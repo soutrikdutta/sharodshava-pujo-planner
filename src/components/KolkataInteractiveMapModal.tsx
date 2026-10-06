@@ -132,6 +132,7 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
   const [restaurantSort, setRestaurantSort] = useState<'rating' | 'price-asc' | 'price-desc' | 'distance'>('rating');
   const [isPriceSortExpanded, setIsPriceSortExpanded] = useState<boolean>(false);
   const [selectedMenuRestaurant, setSelectedMenuRestaurant] = useState<KolkataRestaurant | null>(null);
+  const [confirmedMobileTab, setConfirmedMobileTab] = useState<'route' | 'restaurants'>('route');
 
   // Planned Team & Custom Invite Link State
   const [currentPlannedTeam, setCurrentPlannedTeam] = useState<PlannedTeam | null>(null);
@@ -529,7 +530,7 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
           onClick={(e) => e.stopPropagation()}
           className={`relative w-full ${
             isConfirmed ? 'max-w-5xl' : 'max-w-3xl'
-          } rounded-3xl glass-panel border border-white/20 p-3.5 sm:p-5 shadow-2xl z-10 my-auto overflow-hidden text-left max-h-[92vh] flex flex-col bg-[#0b0d13]/95 transition-all duration-300`}
+          } rounded-2xl sm:rounded-3xl glass-panel border border-white/20 p-2.5 sm:p-5 shadow-2xl z-10 my-auto overflow-hidden text-left h-[95vh] sm:h-auto sm:max-h-[92vh] flex flex-col bg-[#0b0d13]/95 transition-all duration-300`}
         >
           {/* Subtle gold highlight line */}
           <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#d4af37]/60 to-transparent" />
@@ -729,25 +730,27 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
               className="flex flex-col flex-1 min-h-0 h-full space-y-3"
             >
               {/* Window Header with Back to Map button */}
-              <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
+              <div className="flex items-center justify-between pb-2 sm:pb-3 border-b border-white/10 shrink-0 gap-2">
                 <button
                   onClick={() => {
                     setActiveZoneWindow(null);
                     setPandalSearchQuery('');
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-all flex items-center gap-2 cursor-pointer border border-white/10"
+                  className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer border border-white/10 shrink-0"
                 >
                   <ArrowLeft size={14} />
-                  <span>Back to Kolkata Map</span>
+                  <span className="hidden sm:inline">Back to Kolkata Map</span>
+                  <span className="sm:hidden text-xs">Back to Map</span>
                 </button>
 
-                <div className="flex items-center gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold border ${currentZoneInfo?.accentBg} ${currentZoneInfo?.borderColor} ${currentZoneInfo?.textColor}`}>
-                    {currentZoneInfo?.name} • {currentZoneInfo?.bengaliName}
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <span className={`px-2.5 sm:px-3 py-1 rounded-full text-xs font-bold border truncate ${currentZoneInfo?.accentBg} ${currentZoneInfo?.borderColor} ${currentZoneInfo?.textColor}`}>
+                    <span className="sm:hidden">{currentZoneInfo?.name}</span>
+                    <span className="hidden sm:inline">{currentZoneInfo?.name} • {currentZoneInfo?.bengaliName}</span>
                   </span>
                   <button
                     onClick={onClose}
-                    className="p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors cursor-pointer ml-1"
+                    className="p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors cursor-pointer shrink-0"
                   >
                     <X size={18} />
                   </button>
@@ -755,108 +758,113 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
               </div>
 
               {/* Zone Tagline */}
-              <div className={`p-3 rounded-2xl border ${currentZoneInfo?.accentBg} ${currentZoneInfo?.borderColor} shrink-0`}>
-                <div className="flex items-center gap-2 mb-0.5">
-                  <Sparkles size={14} className={currentZoneInfo?.textColor} />
-                  <h3 className={`text-sm sm:text-base font-bold ${currentZoneInfo?.textColor}`}>
+              <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl border ${currentZoneInfo?.accentBg} ${currentZoneInfo?.borderColor} shrink-0`}>
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <Sparkles size={13} className={currentZoneInfo?.textColor} />
+                  <h3 className={`text-xs sm:text-base font-bold ${currentZoneInfo?.textColor}`}>
                     {currentZoneInfo?.name} Pandal Trail
                   </h3>
                 </div>
-                <p className="text-xs text-white/80 leading-relaxed">
+                <p className="hidden sm:block text-xs text-white/80 leading-relaxed mt-0.5">
                   {currentZoneInfo?.tagline}
                 </p>
               </div>
 
               {/* Action Toolbar: Recommended Options Button + Selection Counters */}
-              <div className="p-2.5 sm:p-3 rounded-2xl bg-white/[0.04] border border-white/15 flex items-center justify-between flex-wrap gap-2.5 shrink-0">
+              <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-white/[0.04] border border-white/15 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shrink-0">
                 {/* 1-Tap Auto-Check Recommended Button + Suggest Button */}
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={handleSelectRecommended}
-                    className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#e6ca65] to-[#d4af37] hover:scale-102 text-black text-xs font-extrabold shadow-md transition-all flex items-center gap-1.5 cursor-pointer border border-amber-200"
+                    className="flex-1 sm:flex-initial px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#e6ca65] to-[#d4af37] hover:scale-102 active:scale-95 text-black text-xs font-extrabold shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-amber-200"
                     title="Automatically check all Google-ranked iconic pandals in this zone"
                   >
-                    <Star size={13} fill="black" />
-                    <span>Select Recommended Options</span>
-                    <CheckSquare size={13} />
+                    <Star size={12} fill="black" />
+                    <span className="sm:hidden">⭐ Recommended</span>
+                    <span className="hidden sm:inline">Select Recommended Options</span>
+                    <CheckSquare size={12} />
                   </button>
 
                   {onOpenSuggestPandal && (
                     <button
                       onClick={() => onOpenSuggestPandal(activeZoneWindow || 'south')}
-                      className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                      className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm shrink-0"
                       title="Suggest a missing pandal to be included"
                     >
-                      <Flame size={13} className="text-[#d4af37]" />
-                      <span>Suggest Pandal</span>
+                      <Flame size={12} className="text-[#d4af37]" />
+                      <span className="sm:hidden">Suggest</span>
+                      <span className="hidden sm:inline">Suggest Pandal</span>
                     </button>
                   )}
                 </div>
 
                 {/* Selection Count & Select All / Clear */}
-                <div className="flex items-center gap-2.5 text-xs">
-                  <span className="font-bold text-[#f4e5a9] bg-black/40 px-2.5 py-1 rounded-lg border border-white/10">
+                <div className="flex items-center justify-between sm:justify-end gap-2 text-xs">
+                  <span className="font-bold text-[#f4e5a9] bg-black/40 px-2 py-0.5 rounded-lg border border-white/10 text-[11px] sm:text-xs">
                     {displayedPandals.filter(p => checkedPandalNames.has(p.name)).length} of {displayedPandals.length} selected
                   </span>
                   
-                  <button
-                    onClick={handleSelectAll}
-                    className="text-xs text-sky-400 hover:text-sky-300 hover:underline cursor-pointer font-medium"
-                  >
-                    Select All
-                  </button>
-                  <span className="text-white/30">•</span>
-                  <button
-                    onClick={handleClearAll}
-                    className="text-xs text-white/50 hover:text-white cursor-pointer font-medium"
-                  >
-                    Clear
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSelectAll}
+                      className="text-xs text-sky-400 hover:text-sky-300 hover:underline cursor-pointer font-medium"
+                    >
+                      Select All
+                    </button>
+                    <span className="text-white/30">•</span>
+                    <button
+                      onClick={handleClearAll}
+                      className="text-xs text-white/50 hover:text-white cursor-pointer font-medium"
+                    >
+                      Clear
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* Pandal Search Bar */}
               <div className="relative shrink-0">
-                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#d4af37]" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#d4af37]" />
                 <input
                   type="text"
                   value={pandalSearchQuery}
                   onChange={(e) => setPandalSearchQuery(e.target.value)}
-                  placeholder={`Search pandals in ${currentZoneInfo?.name || 'this zone'} (e.g. ${
-                    activeZoneWindow === 'north' ? 'Hatibagan, Kumartuli, Bagbazar' :
-                    activeZoneWindow === 'central' ? 'College Square, Lebutala, Mohammad Ali' :
-                    'Maddox Square, Ekdalia, Suruchi'
+                  placeholder={`Search pandals (e.g. ${
+                    activeZoneWindow === 'north' ? 'Bagbazar, Hatibagan' :
+                    activeZoneWindow === 'central' ? 'College Square, Lebutala' :
+                    'Maddox Square, Ekdalia'
                   })...`}
-                  className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-white/5 border border-white/15 text-xs sm:text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-[#d4af37] focus:bg-white/[0.08] transition-all shadow-inner"
+                  className="w-full pl-9 pr-8 py-2 rounded-xl bg-white/5 border border-white/15 text-xs sm:text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-[#d4af37] focus:bg-white/[0.08] transition-all shadow-inner"
                 />
                 {pandalSearchQuery && (
                   <button
                     onClick={() => setPandalSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                     title="Clear search"
                   >
-                    <X size={14} />
+                    <X size={13} />
                   </button>
                 )}
               </div>
 
               {/* Date Filter Bar */}
-              <div className="flex items-center justify-between gap-2 shrink-0">
-                <div className="flex items-center gap-1.5 text-xs text-white/60 font-medium">
-                  <Calendar size={13} className="text-[#d4af37]" />
-                  <span>Filter by festival day:</span>
+              <div className="flex items-center justify-between gap-1.5 shrink-0 overflow-hidden">
+                <div className="flex items-center gap-1 text-[11px] sm:text-xs text-white/60 font-medium shrink-0">
+                  <Calendar size={12} className="text-[#d4af37]" />
+                  <span className="hidden sm:inline">Filter by festival day:</span>
+                  <span className="sm:hidden">Day:</span>
                 </div>
 
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
                   <button
                     onClick={() => setSelectedDayId('all')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                    className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer shrink-0 ${
                       selectedDayId === 'all'
                         ? 'bg-white/20 text-white border border-white/30 font-semibold'
                         : 'bg-white/5 text-white/60 hover:text-white border border-white/10'
                     }`}
                   >
-                    All Days
+                    All
                   </button>
 
                   {DURGA_PUJA_2026.days.map(day => {
@@ -868,7 +876,7 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                           setSelectedDayId(day.id);
                           if (onSelectDay) onSelectDay(day);
                         }}
-                        className={`px-2.5 py-1 rounded-lg text-xs transition-all cursor-pointer ${
+                        className={`px-2 py-0.5 rounded-lg text-[11px] transition-all cursor-pointer shrink-0 ${
                           isSelected
                             ? 'bg-[#d4af37] text-black font-semibold shadow-md'
                             : 'bg-white/5 text-white/70 hover:text-white border border-white/10'
@@ -921,59 +929,60 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.03 }}
                       onClick={() => togglePandalCheckbox(place.name)}
-                      className={`group rounded-2xl border p-3.5 transition-all duration-200 cursor-pointer flex items-start justify-between gap-3 ${
+                      className={`group rounded-xl sm:rounded-2xl border p-2.5 sm:p-3.5 transition-all duration-200 cursor-pointer flex items-start justify-between gap-2 sm:gap-3 ${
                         isChecked
                           ? 'bg-[#d4af37]/15 border-[#d4af37]/60 shadow-[0_0_15px_rgba(212,175,55,0.2)]'
                           : 'bg-white/[0.03] hover:bg-white/[0.07] border-white/10'
                       }`}
                     >
                       {/* Checkbox Icon */}
-                      <div className="flex items-start gap-3 min-w-0">
-                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all shrink-0 mt-0.5 ${
+                      <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
+                        <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg flex items-center justify-center border-2 transition-all shrink-0 mt-0.5 ${
                           isChecked
                             ? 'bg-[#d4af37] border-[#d4af37] text-black shadow-md'
                             : 'bg-black/40 border-white/30 group-hover:border-white/60'
                         }`}>
-                          {isChecked && <Check size={14} strokeWidth={3} />}
+                          {isChecked && <Check size={13} strokeWidth={3} />}
                         </div>
 
-                        <div className="space-y-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className={`text-sm sm:text-base font-bold transition-colors ${
+                        <div className="space-y-0.5 sm:space-y-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className={`text-xs sm:text-base font-bold transition-colors leading-snug ${
                               isChecked ? 'text-[#f4e5a9]' : 'text-white group-hover:text-white'
                             }`}>
                               {place.name}
                             </h4>
                             
                             {place.isRecommended && (
-                              <span className="px-2 py-0.2 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
-                                <Star size={9} fill="currentColor" />
-                                Top Recommended
+                              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-0.5 shrink-0">
+                                <Star size={8} fill="currentColor" />
+                                <span className="sm:hidden">Top Pick</span>
+                                <span className="hidden sm:inline">Top Recommended</span>
                               </span>
                             )}
 
                             {place.dayBengaliName && (
-                              <span className="text-[10px] font-serif text-[#d4af37] bg-[#d4af37]/10 px-2 py-0.5 rounded-md border border-[#d4af37]/20">
+                              <span className="text-[9px] sm:text-[10px] font-serif text-[#d4af37] bg-[#d4af37]/10 px-1.5 py-0.2 rounded border border-[#d4af37]/20 shrink-0">
                                 {place.dayBengaliName}
                               </span>
                             )}
                           </div>
 
-                          <p className="text-xs text-white/70 italic flex items-center gap-1.5">
-                            <Sparkles size={11} className={currentZoneInfo?.textColor} />
-                            <span>{place.vibe}</span>
+                          <p className="text-[11px] sm:text-xs text-white/70 italic flex items-center gap-1 truncate">
+                            <Sparkles size={10} className={`${currentZoneInfo?.textColor} shrink-0`} />
+                            <span className="truncate">{place.vibe}</span>
                           </p>
 
-                          <p className="text-[11px] text-white/40 flex items-center gap-1">
-                            <MapPin size={10} className="shrink-0" />
-                            <span className="truncate max-w-[240px] sm:max-w-[360px]">{place.address}</span>
+                          <p className="text-[10px] sm:text-[11px] text-white/40 flex items-center gap-1 truncate">
+                            <MapPin size={9} className="shrink-0" />
+                            <span className="truncate max-w-[170px] sm:max-w-[360px]">{place.address}</span>
                           </p>
                         </div>
                       </div>
 
                       {/* Distance & Action */}
-                      <div className="flex flex-col items-end shrink-0 space-y-2">
-                        <span className="text-xs font-semibold text-[#d4af37] bg-[#d4af37]/10 px-2 py-0.5 rounded-lg border border-[#d4af37]/20 whitespace-nowrap">
+                      <div className="flex flex-col items-end shrink-0 space-y-1.5 sm:space-y-2">
+                        <span className="text-[10px] sm:text-xs font-semibold text-[#d4af37] bg-[#d4af37]/10 px-1.5 sm:px-2 py-0.5 rounded-md sm:rounded-lg border border-[#d4af37]/20 whitespace-nowrap">
                           {place.formattedDistance}
                         </span>
 
@@ -982,12 +991,12 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-[#d4af37] text-white hover:text-black text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer"
+                          className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg bg-white/10 hover:bg-[#d4af37] text-white hover:text-black text-[10px] sm:text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer"
                           title="Open Single Pandal in Google Maps"
                         >
-                          <Navigation size={11} />
+                          <Navigation size={10} />
                           <span>Map</span>
-                          <ExternalLink size={9} className="opacity-70" />
+                          <ExternalLink size={8} className="opacity-70" />
                         </a>
                       </div>
                     </motion.div>
@@ -998,40 +1007,40 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
               {/* ═══════════════════════════════════════════════════════════ */}
               {/* BOTTOM BAR: PROMINENT DONE & ACTION BUTTONS                 */}
               {/* ═══════════════════════════════════════════════════════════ */}
-              <div className="sticky bottom-0 bg-[#0c0e15]/95 backdrop-blur-md pt-3 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 z-30">
+              <div className="sticky bottom-0 bg-[#0c0e15]/95 backdrop-blur-md pt-2 sm:pt-3 pb-1 border-t border-white/10 flex items-center justify-between gap-2 shrink-0 z-30">
                 <button
                   onClick={() => {
                     setActiveZoneWindow(null);
                     setPandalSearchQuery('');
                   }}
-                  className="text-xs text-[#d4af37] hover:underline flex items-center gap-1 cursor-pointer self-start sm:self-center"
+                  className="hidden sm:flex text-xs text-[#d4af37] hover:underline items-center gap-1 cursor-pointer"
                 >
                   <ArrowLeft size={12} />
                   <span>Back to Kolkata map</span>
                 </button>
 
-                <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                   {checkedPandalNames.size > 0 && (
                     <a
                       href={multiStopMapsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-white/15"
+                      className="flex-1 sm:flex-initial px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-white/15"
                       title="Open multi-stop Google Maps directly"
                     >
-                      <Navigation size={13} />
-                      <span>Direct Maps Route ({checkedPandalNames.size})</span>
-                      <ExternalLink size={11} />
+                      <Navigation size={12} />
+                      <span className="sm:hidden">Maps ({checkedPandalNames.size})</span>
+                      <span className="hidden sm:inline">Direct Maps Route ({checkedPandalNames.size})</span>
                     </a>
                   )}
 
                   {/* Primary Done Option Button */}
                   <button
                     onClick={handleConfirmSelection}
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#e6ca65] to-[#d4af37] hover:scale-102 text-black text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shadow-lg border border-amber-200"
+                    className="flex-1 sm:flex-initial px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#e6ca65] to-[#d4af37] hover:scale-102 active:scale-95 text-black text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg border border-amber-200"
                   >
-                    <CheckCircle2 size={16} />
-                    <span>Done ({displayedPandals.filter(p => checkedPandalNames.has(p.name)).length || 'All'} Selected) →</span>
+                    <CheckCircle2 size={15} />
+                    <span>Done ({displayedPandals.filter(p => checkedPandalNames.has(p.name)).length || 'All'}) →</span>
                   </button>
                 </div>
               </div>
@@ -1050,41 +1059,43 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
               className="flex flex-col flex-1 min-h-0 h-full space-y-3"
             >
               {/* Confirmed Header */}
-              <div className="flex items-center justify-between pb-2.5 border-b border-white/10 shrink-0">
-                <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center justify-between pb-2 sm:pb-2.5 border-b border-white/10 shrink-0 gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
                   <button
                     onClick={() => setIsConfirmed(false)}
-                    className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-white/15"
+                    className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer border border-white/15 shrink-0"
                   >
-                    <ArrowLeft size={14} />
-                    <span>Edit Pandals</span>
+                    <ArrowLeft size={13} />
+                    <span className="sm:hidden text-xs">Edit</span>
+                    <span className="hidden sm:inline">Edit Pandals</span>
                   </button>
                   
-                  <div>
-                    <span className="text-[10px] font-bold tracking-widest text-[#d4af37] uppercase">
-                      CONFIRMED ROUTE & DINING
+                  <div className="min-w-0">
+                    <span className="text-[9px] sm:text-[10px] font-bold tracking-widest text-[#d4af37] uppercase block truncate">
+                      CONFIRMED TRAIL
                     </span>
-                    <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                      <span>{currentZoneInfo?.name} Trail</span>
-                      <span className="text-xs px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        {routeData?.orderedPandals.length} Pandals Confirmed
+                    <h2 className="text-xs sm:text-lg font-bold text-white flex items-center gap-1.5 truncate">
+                      <span className="truncate">{currentZoneInfo?.name} Trail</span>
+                      <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">
+                        {routeData?.orderedPandals.length} Stops
                       </span>
                     </h2>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={handleCopyPlanInviteLink}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border shadow-sm ${
+                    className={`px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer border shadow-sm ${
                       copiedPlanLink
                         ? 'bg-emerald-500 text-black border-emerald-400'
                         : 'bg-[#d4af37] hover:bg-[#e6ca65] text-black border-[#d4af37]/60'
                     }`}
                     title="Copy shareable link for this exact route"
                   >
-                    {copiedPlanLink ? <Check size={13} /> : <Copy size={13} />}
-                    <span>{copiedPlanLink ? 'Copied!' : 'Copy Link'}</span>
+                    {copiedPlanLink ? <Check size={12} /> : <Copy size={12} />}
+                    <span className="sm:hidden">{copiedPlanLink ? 'Copied' : 'Share'}</span>
+                    <span className="hidden sm:inline">{copiedPlanLink ? 'Copied!' : 'Copy Link'}</span>
                   </button>
 
                   <button
@@ -1095,30 +1106,58 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                   </button>
                 </div>
               </div>
+
+              {/* Mobile Tab Switcher: Route vs Dining (Visible on mobile only) */}
+              <div className="flex lg:hidden items-center bg-black/60 p-1 rounded-xl border border-white/10 shrink-0">
+                <button
+                  onClick={() => setConfirmedMobileTab('route')}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    confirmedMobileTab === 'route'
+                      ? 'bg-gradient-to-r from-[#d4af37] to-[#e6ca65] text-black shadow-md'
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  <Route size={13} />
+                  <span>Route Sequence ({routeData?.orderedPandals.length})</span>
+                </button>
+
+                <button
+                  onClick={() => setConfirmedMobileTab('restaurants')}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    confirmedMobileTab === 'restaurants'
+                      ? 'bg-emerald-500 text-black shadow-md'
+                      : 'text-white/60 hover:text-emerald-400'
+                  }`}
+                >
+                  <Utensils size={13} />
+                  <span>Food Spots ({nearbyRestaurants.length})</span>
+                </button>
+              </div>
+
               {/* Main Split Grid: Left = Map & Route, Right = Nearby Restaurants */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 flex-1 min-h-0 overflow-y-auto pr-1 sm:pr-2">
                 
                 {/* ────────────────────────────────────────────────────────── */}
                 {/* LEFT COLUMN: ROUTE BREAKDOWN & MAP (lg:col-span-7)          */}
                 {/* ────────────────────────────────────────────────────────── */}
-                <div className="lg:col-span-7 space-y-3.5 flex flex-col">
+                <div className={`lg:col-span-7 space-y-3.5 flex flex-col ${confirmedMobileTab !== 'route' ? 'hidden lg:flex' : 'flex'}`}>
                   
                   {/* Route Quick Stats Card */}
-                  <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-[#d4af37]/40 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-[#d4af37]/20 border border-[#d4af37]/50 text-[#d4af37] flex items-center justify-center">
-                        <Route size={18} />
+                  <div className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-white/[0.04] border border-[#d4af37]/40 flex items-center justify-between gap-2 sm:gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#d4af37]/20 border border-[#d4af37]/50 text-[#d4af37] flex items-center justify-center shrink-0">
+                        <Route size={16} />
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2 text-xs text-white/70">
-                          <span className="font-semibold text-white">~{routeData?.totalDistanceKm} km total</span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-white/70 flex-wrap">
+                          <span className="font-semibold text-white">~{routeData?.totalDistanceKm} km</span>
                           <span>•</span>
                           <span className="flex items-center gap-1 text-[#f4e5a9]">
                             <Clock size={11} />
-                            <span>~{Math.round((routeData?.totalEtaMinutes || 0) / 60)}h {(routeData?.totalEtaMinutes || 0) % 60}m Hopping ETA</span>
+                            <span>~{Math.round((routeData?.totalEtaMinutes || 0) / 60)}h {(routeData?.totalEtaMinutes || 0) % 60}m</span>
                           </span>
                         </div>
-                        <p className="text-[11px] text-white/50">Shortest sequence calculated with live Kolkata traffic</p>
+                        <p className="text-[10px] sm:text-[11px] text-white/50 truncate">Live shortest sequence</p>
                       </div>
                     </div>
 
@@ -1126,11 +1165,12 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                       href={routeData?.googleMapsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#e6ca65] hover:scale-102 text-black text-xs font-extrabold shadow-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                      className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#e6ca65] hover:scale-102 active:scale-95 text-black text-xs font-extrabold shadow-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
                     >
-                      <Navigation size={13} />
-                      <span>Start Navigation</span>
-                      <ExternalLink size={11} />
+                      <Navigation size={12} />
+                      <span className="sm:hidden">Navigate</span>
+                      <span className="hidden sm:inline">Start Navigation</span>
+                      <ExternalLink size={10} />
                     </a>
                   </div>
 
@@ -1209,7 +1249,7 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
                 {/* ────────────────────────────────────────────────────────── */}
                 {/* RIGHT COLUMN: RESTAURANTS NEARBY & FILTER (lg:col-span-5)  */}
                 {/* ────────────────────────────────────────────────────────── */}
-                <div className="lg:col-span-5 space-y-3.5 flex flex-col">
+                <div className={`lg:col-span-5 space-y-3.5 flex flex-col ${confirmedMobileTab !== 'restaurants' ? 'hidden lg:flex' : 'flex'}`}>
                   
                   {/* Dining Header & Veg/Non-Veg Filter */}
                   <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/15 space-y-2.5">
@@ -1498,38 +1538,40 @@ export const KolkataInteractiveMapModal: React.FC<KolkataInteractiveMapModalProp
               </div>
 
               {/* Bottom Confirmed Action Bar */}
-              <div className="pt-2.5 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2.5 shrink-0">
+              <div className="pt-2 sm:pt-2.5 border-t border-white/10 flex items-center justify-between gap-2 shrink-0">
                 <button
                   onClick={() => setIsConfirmed(false)}
-                  className="text-xs text-[#d4af37] hover:underline flex items-center gap-1 cursor-pointer self-start sm:self-center"
+                  className="text-xs text-[#d4af37] hover:underline flex items-center gap-1 cursor-pointer shrink-0"
                 >
                   <ArrowLeft size={12} />
-                  <span>Change or add more pandals</span>
+                  <span className="hidden sm:inline">Change or add more pandals</span>
+                  <span className="sm:hidden">Edit stops</span>
                 </button>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <button
                     onClick={handlePlanRouteWithSelected}
-                    className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-white/15"
+                    className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer border border-white/15"
                   >
-                    <Route size={13} />
-                    <span>Trip Wizard</span>
+                    <Route size={12} />
+                    <span className="hidden sm:inline">Trip Wizard</span>
+                    <span className="sm:hidden">Wizard</span>
                   </button>
 
                   <a
                     href={routeData?.googleMapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#e6ca65] hover:from-[#e6ca65] hover:to-[#d4af37] text-black text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+                    className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#e6ca65] hover:from-[#e6ca65] hover:to-[#d4af37] text-black text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shadow-md"
                   >
-                    <Navigation size={13} />
-                    <span>Navigation</span>
-                    <ExternalLink size={11} />
+                    <Navigation size={12} />
+                    <span>Maps</span>
+                    <ExternalLink size={10} />
                   </a>
 
                   <button
                     onClick={onClose}
-                    className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors cursor-pointer"
+                    className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors cursor-pointer"
                   >
                     Done
                   </button>
