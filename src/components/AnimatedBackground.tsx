@@ -67,23 +67,28 @@ export const AnimatedBackground: React.FC = () => {
 
       {/* Hardware-accelerated Floating Golden Festive Embers (CSS Keyframe Driven) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(8)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-[#fde047] pointer-events-none animate-float-ember"
-            style={{
-              width: i % 2 === 0 ? '3px' : '2px',
-              height: i % 2 === 0 ? '3px' : '2px',
-              left: `${12 + (i * 11) % 76}%`,
-              bottom: `${10 + (i * 9) % 40}%`,
-              opacity: 0.4 + (i % 2) * 0.2,
-              boxShadow: '0 0 6px 1.5px rgba(234, 179, 8, 0.6)',
-              animationDuration: `${7 + (i % 3) * 2.5}s`,
-              animationDelay: `${i * 0.8}s`,
-              transform: 'translateZ(0)',
-            }}
-          />
-        ))}
+        {[...Array(12)].map((_, i) => {
+          const colors = ['#fde047', '#f59e0b', '#fbbf24', '#f87171'];
+          const color = colors[i % colors.length];
+          return (
+            <div
+              key={i}
+              className="absolute rounded-full pointer-events-none animate-float-ember"
+              style={{
+                backgroundColor: color,
+                width: i % 3 === 0 ? '3.5px' : i % 2 === 0 ? '2.5px' : '2px',
+                height: i % 3 === 0 ? '3.5px' : i % 2 === 0 ? '2.5px' : '2px',
+                left: `${8 + (i * 7.5) % 84}%`,
+                bottom: `${5 + (i * 8) % 45}%`,
+                opacity: 0.35 + (i % 3) * 0.2,
+                boxShadow: `0 0 8px 2px ${color}88`,
+                animationDuration: `${6.5 + (i % 4) * 2}s`,
+                animationDelay: `${i * 0.65}s`,
+                transform: 'translateZ(0)',
+              }}
+            />
+          );
+        })}
       </div>
     </div>
   );

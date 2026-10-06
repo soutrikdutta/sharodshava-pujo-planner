@@ -43,17 +43,52 @@ export default {
       },
       animation: {
         'float-slow': 'float 8s ease-in-out infinite',
+        'float-gentle': 'floatGentle 4s ease-in-out infinite',
+        'float-sway': 'floatSway 5s ease-in-out infinite',
         'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'glow-pulse': 'glowPulse 3s ease-in-out infinite alternate',
+        'glow-ring': 'glowRing 3s ease-in-out infinite',
+        'shimmer': 'shimmer 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'badge-bounce': 'badgeBounce 2.5s ease-in-out infinite',
+        'spin-slow': 'spinSlow 20s linear infinite',
+        'pulse-diya': 'diyaFlicker 2.2s ease-in-out infinite',
       },
       keyframes: {
         float: {
           '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
           '50%': { transform: 'translateY(-12px) rotate(1deg)' },
         },
+        floatGentle: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-6px)' },
+        },
+        floatSway: {
+          '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
+          '50%': { transform: 'translateY(-5px) rotate(1.2deg)' },
+        },
         glowPulse: {
           '0%': { opacity: '0.4', transform: 'scale(0.98)' },
           '100%': { opacity: '0.85', transform: 'scale(1.02)' },
+        },
+        glowRing: {
+          '0%, 100%': { boxShadow: '0 0 15px rgba(212, 175, 55, 0.25), inset 0 0 10px rgba(212, 175, 55, 0.15)' },
+          '50%': { boxShadow: '0 0 28px rgba(212, 175, 55, 0.5), inset 0 0 16px rgba(212, 175, 55, 0.3)' },
+        },
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(200%)' },
+        },
+        badgeBounce: {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.12)' },
+        },
+        spinSlow: {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+        diyaFlicker: {
+          '0%, 100%': { opacity: '0.85', filter: 'drop-shadow(0 0 10px rgba(244, 180, 26, 0.6))' },
+          '50%': { opacity: '1', filter: 'drop-shadow(0 0 20px rgba(244, 180, 26, 0.95))' },
         }
       }
     },

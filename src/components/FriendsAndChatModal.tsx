@@ -242,23 +242,32 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
           </div>
 
           {/* Navigation Tabs - Modern Segmented Control for Mobile & Desktop */}
-          <div className="grid grid-cols-3 gap-1 sm:gap-2 py-2 shrink-0 bg-white/[0.03] p-1 rounded-xl sm:rounded-2xl border border-white/5 my-1">
+          <div className="grid grid-cols-3 gap-1 sm:gap-2 py-2 shrink-0 bg-white/[0.03] p-1 rounded-xl sm:rounded-2xl border border-white/5 my-1 relative">
             <button
               onClick={() => {
                 setActiveTab('explore');
                 setMobileChatView('list');
               }}
-              className={`flex items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`relative flex items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'explore'
-                  ? 'bg-[#d4af37] text-black shadow-lg shadow-[#d4af37]/20 font-bold'
-                  : 'text-white/70 hover:bg-white/10 hover:text-white'
+                  ? 'text-black font-bold'
+                  : 'text-white/70 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <UserPlus size={14} className="shrink-0" />
-              <span className="truncate">
-                <span className="inline sm:hidden">Add</span>
-                <span className="hidden sm:inline">Add Friends</span>
-                {allUsers.length > 0 && <span className="opacity-80"> ({allUsers.length})</span>}
+              {activeTab === 'explore' && (
+                <motion.div
+                  layoutId="activeSocialTabPill"
+                  className="absolute inset-0 bg-[#d4af37] rounded-lg sm:rounded-xl shadow-lg shadow-[#d4af37]/25"
+                  transition={{ type: 'spring', damping: 26, stiffness: 380 }}
+                />
+              )}
+              <span className="relative z-10 flex items-center justify-center gap-1 sm:gap-1.5">
+                <UserPlus size={14} className="shrink-0" />
+                <span className="truncate">
+                  <span className="inline sm:hidden">Add</span>
+                  <span className="hidden sm:inline">Add Friends</span>
+                  {allUsers.length > 0 && <span className="opacity-80"> ({allUsers.length})</span>}
+                </span>
               </span>
             </button>
 
@@ -269,30 +278,48 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
               }}
               className={`relative flex items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'requests'
-                  ? 'bg-[#d4af37] text-black shadow-lg shadow-[#d4af37]/20 font-bold'
-                  : 'text-white/70 hover:bg-white/10 hover:text-white'
+                  ? 'text-black font-bold'
+                  : 'text-white/70 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <Users size={14} className="shrink-0" />
-              <span className="truncate">Requests</span>
-              {pendingReceivedCount > 0 && (
-                <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-rose-500 text-white text-[9px] sm:text-[10px] font-bold flex items-center justify-center animate-pulse shrink-0">
-                  {pendingReceivedCount}
-                </span>
+              {activeTab === 'requests' && (
+                <motion.div
+                  layoutId="activeSocialTabPill"
+                  className="absolute inset-0 bg-[#d4af37] rounded-lg sm:rounded-xl shadow-lg shadow-[#d4af37]/25"
+                  transition={{ type: 'spring', damping: 26, stiffness: 380 }}
+                />
               )}
+              <span className="relative z-10 flex items-center justify-center gap-1 sm:gap-1.5">
+                <Users size={14} className="shrink-0" />
+                <span className="truncate">Requests</span>
+                {pendingReceivedCount > 0 && (
+                  <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-rose-500 text-white text-[9px] sm:text-[10px] font-bold flex items-center justify-center animate-badge-bounce shrink-0 shadow-sm">
+                    {pendingReceivedCount}
+                  </span>
+                )}
+              </span>
             </button>
 
             <button
               onClick={() => setActiveTab('chats')}
-              className={`flex items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`relative flex items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'chats'
-                  ? 'bg-[#d4af37] text-black shadow-lg shadow-[#d4af37]/20 font-bold'
-                  : 'text-white/70 hover:bg-white/10 hover:text-white'
+                  ? 'text-black font-bold'
+                  : 'text-white/70 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <MessageSquare size={14} className="shrink-0" />
-              <span className="truncate">
-                Chats{friends.length > 0 && <span className="opacity-80"> ({friends.length})</span>}
+              {activeTab === 'chats' && (
+                <motion.div
+                  layoutId="activeSocialTabPill"
+                  className="absolute inset-0 bg-[#d4af37] rounded-lg sm:rounded-xl shadow-lg shadow-[#d4af37]/25"
+                  transition={{ type: 'spring', damping: 26, stiffness: 380 }}
+                />
+              )}
+              <span className="relative z-10 flex items-center justify-center gap-1 sm:gap-1.5">
+                <MessageSquare size={14} className="shrink-0" />
+                <span className="truncate">
+                  Chats{friends.length > 0 && <span className="opacity-80"> ({friends.length})</span>}
+                </span>
               </span>
             </button>
           </div>
@@ -781,9 +808,9 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                             return (
                               <motion.div
                                 key={msg.id}
-                                initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                                transition={{ duration: 0.18, ease: 'easeOut' }}
+                                transition={{ type: 'spring', damping: 22, stiffness: 360 }}
                                 className={`flex items-end gap-2 sm:gap-2.5 ${isMe ? 'justify-end' : 'justify-start'}`}
                               >
                                 {/* Left Avatar for Friend */}
@@ -868,13 +895,16 @@ export const FriendsAndChatModal: React.FC<FriendsAndChatModalProps> = ({
                           placeholder={`Type a message to ${currentFriend.name.split(' ')[0]}...`}
                           className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-white/5 border border-white/15 text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#d4af37]"
                         />
-                        <button
+                        <motion.button
+                          whileHover={{ scale: 1.08 }}
+                          whileTap={{ scale: 0.92 }}
+                          transition={{ type: 'spring', damping: 20, stiffness: 400 }}
                           type="submit"
                           disabled={!messageInput.trim()}
                           className="p-2 sm:p-2.5 rounded-xl bg-[#d4af37] text-black hover:bg-[#e6ca65] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-md shrink-0"
                         >
                           <Send size={15} />
-                        </button>
+                        </motion.button>
                       </form>
                     </>
                   )}

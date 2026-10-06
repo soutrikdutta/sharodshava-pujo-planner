@@ -57,25 +57,32 @@ const CountdownCard: React.FC<{ label: string; val: number; sub: string; idx: nu
     <motion.div
       initial={{ opacity: 0, scale: 0.9, y: 15 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
+      whileHover={{ y: -4, scale: 1.03 }}
       transition={{ delay: 0.08 + idx * 0.05, duration: 0.4 }}
-      className="relative group flex flex-col items-center justify-center p-3 sm:p-5 rounded-2xl sm:rounded-3xl bg-black/65 border border-[#d4af37]/45 hover:border-[#d4af37] backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.6)] transition-all duration-200 overflow-hidden transform-gpu"
+      className="relative group flex flex-col items-center justify-center p-3 sm:p-5 rounded-2xl sm:rounded-3xl bg-black/65 border border-[#d4af37]/45 hover:border-[#d4af37] backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.6)] hover:shadow-[0_12px_36px_rgba(212,175,55,0.25)] transition-all duration-300 overflow-hidden transform-gpu"
       style={{ transform: 'translateZ(0)' }}
     >
       {/* Subtle top light highlight */}
       <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
       
+      {/* Golden shimmer on hover */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#d4af37]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
       {/* Digits with smooth tick transition */}
       <div className="relative flex items-center justify-center h-11 sm:h-16 md:h-20 w-full overflow-hidden">
-        <span
+        <motion.span
           key={val}
+          initial={{ opacity: 0.7, y: 4, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
           className="font-sans font-black text-3xl sm:text-5xl md:text-6xl tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white via-white/95 to-[#f4e5a9] drop-shadow-[0_4px_16px_rgba(212,175,55,0.4)]"
         >
           {String(val).padStart(2, '0')}
-        </span>
+        </motion.span>
       </div>
 
       {/* Unit Label */}
-      <span className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs font-extrabold tracking-[0.2em] text-[#d4af37] font-mono uppercase">
+      <span className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs font-extrabold tracking-[0.2em] text-[#d4af37] font-mono uppercase group-hover:text-[#f4e5a9] transition-colors">
         {label}
       </span>
       <span className="text-[9px] sm:text-[10px] text-white/45 font-serif mt-0.5">
@@ -221,7 +228,7 @@ export const FestivalHero: React.FC<FestivalHeroProps> = ({
                 whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={onOpenSitePicker}
-                className="group relative w-full px-4 sm:px-6 py-3 sm:py-3.5 rounded-2xl glass-panel-gold border border-[#d4af37]/40 hover:border-[#d4af37] bg-black/55 hover:bg-black/70 backdrop-blur-2xl text-white flex items-center justify-between space-x-3 transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:shadow-[0_10px_40px_rgba(212,175,55,0.3)]"
+                className="group relative w-full px-4 sm:px-6 py-3 sm:py-3.5 rounded-2xl glass-panel-gold border border-[#d4af37]/40 hover:border-[#d4af37] bg-black/55 hover:bg-black/70 backdrop-blur-2xl text-white flex items-center justify-between space-x-3 transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:shadow-[0_10px_40px_rgba(212,175,55,0.3)] shimmer-badge"
               >
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 rounded-xl bg-[#d4af37]/20 border border-[#d4af37]/40 flex items-center justify-center text-[#d4af37] group-hover:scale-110 transition-transform shrink-0">
@@ -256,15 +263,16 @@ export const FestivalHero: React.FC<FestivalHeroProps> = ({
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col items-center w-full"
         >
-          {/* Subtle Bengali subtitle */}
-          <motion.span
+          {/* Subtle Bengali subtitle with shimmer badge */}
+          <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-[11px] sm:text-xs uppercase tracking-[0.25em] text-[#d4af37]/90 font-medium mb-2 font-mono"
+            className="mb-2 px-3.5 py-1 rounded-full bg-black/60 border border-[#d4af37]/40 text-[11px] sm:text-xs uppercase tracking-[0.22em] text-[#f4e5a9] font-mono shimmer-badge shadow-[0_0_15px_rgba(212,175,55,0.15)] flex items-center gap-1.5"
           >
-            {festival.bengaliTitle} • Aagomoni Countdown
-          </motion.span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37] animate-ping" />
+            <span>{festival.bengaliTitle} • Aagomoni Countdown</span>
+          </motion.div>
 
           {/* Real-time Live Countdown Grid: Days, Hours, Mins, Secs */}
           <div className="relative my-3 sm:my-5 w-full max-w-md sm:max-w-xl md:max-w-2xl mx-auto px-1">

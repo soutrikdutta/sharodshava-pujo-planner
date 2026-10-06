@@ -206,17 +206,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Social Hub Button */}
           {onOpenSocialHub && (
             <motion.button
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.94 }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 400 }}
               onClick={onOpenSocialHub}
               aria-label="Friends & Live Pujo Chats"
               title="Friend Requests & Live Pujo Chats"
-              className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-sky-400/50 flex items-center justify-center text-white/80 hover:text-sky-300 transition-all cursor-pointer shrink-0"
+              className="group relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-sky-400/50 flex items-center justify-center text-white/80 hover:text-sky-300 transition-all cursor-pointer shrink-0 hover:shadow-[0_0_15px_rgba(56,189,248,0.3)]"
             >
-              <Users size={15} />
-              <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+              <Users size={15} className="group-hover:scale-110 transition-transform" />
+              <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5 animate-badge-bounce">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
               </span>
             </motion.button>
           )}
@@ -224,13 +225,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Suggest Pandal Button */}
           {onOpenSuggestPandal && (
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.07 }}
+              whileTap={{ scale: 0.94 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 400 }}
               onClick={onOpenSuggestPandal}
               title="Suggest a Pandal for Sharodshav"
-              className="hidden sm:flex px-2.5 py-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 transition-all items-center gap-1 text-xs cursor-pointer"
+              className="hidden sm:flex px-2.5 py-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 transition-all items-center gap-1.5 text-xs cursor-pointer hover:shadow-[0_0_15px_rgba(245,158,11,0.25)]"
             >
-              <Flame size={13} className="text-[#d4af37]" />
+              <Flame size={13} className="text-[#d4af37] animate-pulse-diya" />
               <span className="text-[11px] font-semibold">Suggest</span>
             </motion.button>
           )}
@@ -238,26 +240,28 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* User Guide Button */}
           {onOpenGuide && (
             <motion.button
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.94 }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 400 }}
               onClick={onOpenGuide}
               title="How to Use / App Guide"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-emerald-400/50 flex items-center justify-center text-white/80 hover:text-emerald-300 transition-all cursor-pointer shrink-0"
+              className="group w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-emerald-400/50 flex items-center justify-center text-white/80 hover:text-emerald-300 transition-all cursor-pointer shrink-0 hover:shadow-[0_0_15px_rgba(52,211,153,0.3)]"
             >
-              <Compass size={15} />
+              <Compass size={15} className="group-hover:rotate-45 transition-transform duration-500" />
             </motion.button>
           )}
 
           {/* Sharodshav Info ("i") modal */}
           <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.94 }}
+            whileHover={{ scale: 1.12 }}
+            whileTap={{ scale: 0.92 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 400 }}
             onClick={onOpenInfo}
             aria-label="Application Information"
             title="About Sharodshav"
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-[#d4af37]/50 flex items-center justify-center text-white/80 hover:text-[#f4e5a9] transition-all cursor-pointer shrink-0"
+            className="group w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-[#d4af37]/50 flex items-center justify-center text-white/80 hover:text-[#f4e5a9] transition-all cursor-pointer shrink-0 hover:shadow-[0_0_15px_rgba(212,175,55,0.3)]"
           >
-            <Info size={15} />
+            <Info size={15} className="group-hover:rotate-12 transition-transform duration-300" />
           </motion.button>
 
           {/* User profile with dropdown */}

@@ -283,16 +283,17 @@ export const PujoAiChatbot: React.FC = () => {
       {/* Floating Trigger Button */}
       <motion.button
         onClick={() => setIsOpen(prev => !prev)}
-        className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 p-3.5 sm:p-4 rounded-full bg-gradient-to-r from-[#d4af37] via-[#f39c12] to-[#c0392b] text-black shadow-2xl flex items-center gap-2 group cursor-pointer border-2 border-amber-200/50 hover:brightness-110 active:scale-95 transition-all"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 p-3.5 sm:p-4 rounded-full bg-gradient-to-r from-[#d4af37] via-[#f39c12] to-[#c0392b] text-black shadow-2xl flex items-center gap-2 group cursor-pointer border-2 border-amber-200/50 hover:brightness-110 active:scale-95 transition-all animate-float-gentle animate-glow-ring shimmer-badge"
+        whileHover={{ scale: 1.08, y: -4 }}
+        whileTap={{ scale: 0.94 }}
+        transition={{ type: 'spring', damping: 18, stiffness: 380 }}
         title="Open Durga Puja 2026 AI Assistant"
       >
         <div className="relative">
-          <Bot size={24} className="text-black drop-shadow-md" />
-          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-200 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400" />
+          <Bot size={24} className="text-black drop-shadow-md group-hover:rotate-12 transition-transform duration-300" />
+          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 animate-badge-bounce">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-100 opacity-85" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-300 shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
           </span>
         </div>
         <span className="font-bold text-xs sm:text-sm tracking-wide hidden sm:inline text-black drop-shadow-xs">
@@ -369,7 +370,13 @@ export const PujoAiChatbot: React.FC = () => {
                 const isSpeaking = speakingId === msg.id;
 
                 return (
-                  <div key={msg.id} className="space-y-2">
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ type: 'spring', damping: 24, stiffness: 350 }}
+                    className="space-y-2"
+                  >
                     <div className={`flex gap-2.5 ${isBot ? 'justify-start' : 'justify-end'}`}>
                       {isBot && (
                         <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-[#d4af37]/30 to-[#f39c12]/30 border border-[#d4af37]/40 flex items-center justify-center text-[#d4af37] shrink-0 mt-1">
@@ -430,7 +437,7 @@ export const PujoAiChatbot: React.FC = () => {
                         ))}
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
 

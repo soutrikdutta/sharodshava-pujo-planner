@@ -35,12 +35,13 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
         
         {/* Button 1: Select Day */}
         <motion.button
-          whileHover={{ scale: 1.03, y: -2 }}
-          whileTap={{ scale: 0.97 }}
+          whileHover={{ scale: 1.04, y: -3 }}
+          whileTap={{ scale: 0.96 }}
+          transition={{ type: 'spring', damping: 20, stiffness: 380 }}
           onHoverStart={() => setIsHovered(true)}
           onHoverEnd={() => setIsHovered(false)}
           onClick={onOpenModal}
-          className="group relative w-full sm:w-auto px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl glass-panel border border-white/15 hover:border-[#d4af37]/45 bg-black/55 hover:bg-black/70 backdrop-blur-2xl text-white flex items-center justify-center space-x-3 transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+          className="group relative w-full sm:w-auto px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl glass-panel border border-white/15 hover:border-[#d4af37]/50 bg-black/55 hover:bg-black/70 backdrop-blur-2xl text-white flex items-center justify-center space-x-3 transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:shadow-[0_10px_35px_rgba(212,175,55,0.2)]"
         >
           {/* Subtle warm glow background on hover */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#d4af37]/15 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -53,7 +54,7 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
             transition={{ duration: 0.7, ease: 'easeInOut' }}
           />
 
-          <Calendar size={16} className="text-[#d4af37] opacity-80 group-hover:opacity-100 transition-opacity" />
+          <Calendar size={16} className="text-[#d4af37] opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all" />
 
           <span className="text-xs sm:text-base font-medium tracking-tight text-white/95 group-hover:text-white">
             {selectedDayName ? `Selected: ${selectedDayName}` : 'Select Day'}
@@ -61,9 +62,9 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
 
           {/* Smooth animated downward arrow */}
           <motion.div
-            animate={{ y: [0, 3, 0] }}
+            animate={{ y: [0, 3.5, 0] }}
             transition={{
-              duration: 1.8,
+              duration: 1.6,
               repeat: Infinity,
               ease: 'easeInOut',
             }}
@@ -77,12 +78,13 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
 
         {/* Button 2: Plan your trip */}
         <motion.button
-          whileHover={{ scale: 1.03, y: -2 }}
-          whileTap={{ scale: 0.97 }}
+          whileHover={{ scale: 1.04, y: -3 }}
+          whileTap={{ scale: 0.96 }}
+          transition={{ type: 'spring', damping: 20, stiffness: 380 }}
           onHoverStart={() => setIsPlanHovered(true)}
           onHoverEnd={() => setIsPlanHovered(false)}
           onClick={onOpenPlanTrip}
-          className="group relative w-full sm:w-auto px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl glass-panel-gold border border-[#d4af37]/45 hover:border-[#d4af37] bg-black/55 hover:bg-black/70 backdrop-blur-2xl text-white flex items-center justify-center space-x-3 transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:shadow-[0_8px_35px_rgba(212,175,55,0.25)]"
+          className="group relative w-full sm:w-auto px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl glass-panel-gold border border-[#d4af37]/45 hover:border-[#d4af37] bg-black/55 hover:bg-black/70 backdrop-blur-2xl text-white flex items-center justify-center space-x-3 transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:shadow-[0_10px_40px_rgba(212,175,55,0.35)] shimmer-badge"
         >
           {/* Subtle warm glow */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#d4af37]/15 via-[#d4af37]/25 to-[#d4af37]/15 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -95,7 +97,7 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
             transition={{ duration: 0.7, ease: 'easeInOut' }}
           />
 
-          <div className="w-6 h-6 rounded-lg bg-[#d4af37]/20 flex items-center justify-center text-[#d4af37] group-hover:scale-110 transition-transform">
+          <div className="w-6 h-6 rounded-lg bg-[#d4af37]/20 flex items-center justify-center text-[#d4af37] group-hover:scale-115 group-hover:rotate-6 transition-all duration-300">
             <Route size={14} />
           </div>
 
@@ -103,7 +105,7 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
             Plan your trip
           </span>
 
-          <Sparkles size={14} className="text-[#d4af37] group-hover:rotate-12 transition-transform" />
+          <Sparkles size={14} className="text-[#d4af37] group-hover:rotate-45 group-hover:scale-110 transition-transform duration-300" />
         </motion.button>
 
         {/* Button 3: Explore curated trips */}
@@ -111,11 +113,12 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
           href="https://sharodshava-curated.vercel.app"
           target="_blank"
           rel="noopener noreferrer"
-          whileHover={{ scale: 1.03, y: -2 }}
-          whileTap={{ scale: 0.97 }}
+          whileHover={{ scale: 1.04, y: -3 }}
+          whileTap={{ scale: 0.96 }}
+          transition={{ type: 'spring', damping: 20, stiffness: 380 }}
           onHoverStart={() => setIsCuratedHovered(true)}
           onHoverEnd={() => setIsCuratedHovered(false)}
-          className="group relative w-full sm:w-auto px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl glass-panel border border-sky-400/40 hover:border-sky-400 bg-black/55 hover:bg-black/70 backdrop-blur-2xl text-white flex items-center justify-center space-x-3 transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:shadow-[0_8px_35px_rgba(56,189,248,0.25)]"
+          className="group relative w-full sm:w-auto px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl glass-panel border border-sky-400/40 hover:border-sky-400 bg-black/55 hover:bg-black/70 backdrop-blur-2xl text-white flex items-center justify-center space-x-3 transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:shadow-[0_10px_40px_rgba(56,189,248,0.3)]"
         >
           {/* Subtle sky/amber glow */}
           <div className="absolute inset-0 bg-gradient-to-r from-sky-500/15 via-sky-400/25 to-sky-500/15 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -128,7 +131,7 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
             transition={{ duration: 0.7, ease: 'easeInOut' }}
           />
 
-          <div className="w-6 h-6 rounded-lg bg-sky-500/20 flex items-center justify-center text-sky-400 group-hover:scale-110 transition-transform">
+          <div className="w-6 h-6 rounded-lg bg-sky-500/20 flex items-center justify-center text-sky-400 group-hover:scale-115 group-hover:rotate-45 transition-all duration-500">
             <Compass size={14} />
           </div>
 
